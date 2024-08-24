@@ -19,22 +19,6 @@ def ping():
     ''' Return ping message'''
     return {"endpoint name": endpoint_name, "region name": region_name}
 
-@app.post("/update_endpoint")
-async def update_endpoint(request: Request):
-    global endpoint_name
-    try:
-        payload = await request.json()
-        new_endpoint_name = payload.get("endpoint_name")
-        if new_endpoint_name:
-            endpoint_name = new_endpoint_name
-            return {"message": f"Endpoint name updated to: {endpoint_name}"}
-        else:
-            return {"error": "No endpoint_name provided in the request body"}, 400
-    except json.JSONDecodeError as json_err:
-        return {"error": f"Invalid JSON input: {str(json_err)}"}, 400
-    except Exception as e:
-        return {"error": f"Error setting endpoint: {str(e)}"}, 500
-
 
 @app.post("/predict")
 async def predict(request: Request):
