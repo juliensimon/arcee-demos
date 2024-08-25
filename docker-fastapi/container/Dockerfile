@@ -14,7 +14,7 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=on \
     PIP_DISABLE_PIP_VERSION_CHECK=on
 
-COPY ./requirements-docker.txt /code/requirements.txt
+COPY ./requirements.txt /code/requirements.txt
 
 COPY ./app /code/app
 
