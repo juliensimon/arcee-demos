@@ -1,4 +1,5 @@
 import json
+import pprint
 from requests import request
 
 
@@ -11,7 +12,13 @@ def invoke(url="http://localhost:80", path="/", method="GET",
 if __name__ == "__main__":
     response = invoke()
     assert response.status_code == 200
-    print(response.json())
+    pprint.pprint(response.json())
+
+    response = invoke(path="/list_endpoints", method="GET")
+    assert response.status_code == 200
+    pprint.pprint(response.json())
+
+  
 
     body = {
         "model": "arcee-ai/Arcee-Scribe",
@@ -23,5 +30,5 @@ if __name__ == "__main__":
     }
     response = invoke(path="/predict", method="POST", body=json.dumps(body))
     assert response.status_code == 200
-    print(response.json())
+    pprint.pprint(response.json())
 

@@ -1,2 +1,5 @@
 requests
 sagemaker
+pytest
+fastapi
+httpx
