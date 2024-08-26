@@ -8,12 +8,12 @@ Parameters:
     AllowedPattern: "arn:aws:sagemaker:[a-z0-9-]+:[0-9]{12}:model-package/[a-zA-Z0-9](-*[a-zA-Z0-9])*"
     ConstraintDescription: ModelPackageName must be a valid SageMaker model package ARN
 
-  EndpointName:
+  EndpointNamePrefix:
     Type: String
-    Description: A unique name for the SageMaker endpoint to be created
-    AllowedPattern: ".+"
-    Default: "djlserving-endpoint"
-    ConstraintDescription: EndpointName must not be empty
+    Description: A prefix for the SageMaker endpoint name
+    AllowedPattern: "[a-zA-Z0-9-]+"
+    Default: "djl-vllm-endpoint"
+    ConstraintDescription: EndpointNamePrefix must contain only alphanumeric characters and hyphens
 
   InstanceType:
     Type: String
@@ -102,7 +102,11 @@ Resources:
   SageMakerEndpoint:
     Type: AWS::SageMaker::Endpoint
     Properties:
-      EndpointName: !Ref EndpointName
+      EndpointName: 
+        Fn::Join:
+          - "-"
+          - - !Ref EndpointNamePrefix
+            - !Select [2, !Split ["/", !Ref "AWS::StackId"]]
       EndpointConfigName: !GetAtt SageMakerEndpointConfig.EndpointConfigName
 
   SageMakerExecutionRole:
@@ -135,4 +139,4 @@ Resources:
 Outputs:
   EndpointName:
     Description: Name of the SageMaker Endpoint
-    Value: !Ref SageMakerEndpoint
+    Value: !GetAtt SageMakerEndpoint.EndpointName
