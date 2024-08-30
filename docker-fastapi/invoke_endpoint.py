@@ -38,15 +38,16 @@ def invoke(url="http://localhost:80", path="/", method="GET",
 
 
 if __name__ == "__main__":
-    response = invoke()
+
+    URL = "http://ec2-35-93-22-81.us-west-2.compute.amazonaws.com:8000"
+
+    response = invoke(url=URL)
     assert response.status_code == 200
     pprint.pprint(response.json())
 
-    response = invoke(path="/list_endpoints", method="GET")
+    response = invoke(url=URL, path="/list_endpoints", method="GET")
     assert response.status_code == 200
     pprint.pprint(response.json())
-
-  
 
     body = {
         "model": "arcee-ai/Arcee-Scribe",
@@ -56,7 +57,7 @@ if __name__ == "__main__":
         ],
         "max_tokens": 256,
     }
-    response = invoke(path="/predict", method="POST", body=json.dumps(body))
+    response = invoke(url=URL, path="/predict", method="POST", body=json.dumps(body))
     assert response.status_code == 200
     pprint.pprint(response.json())
 

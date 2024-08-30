@@ -6,8 +6,10 @@ API_KEY = os.environ.get("API_KEY")
 headers = {}
 headers["X-API-Key"] = API_KEY
 
+base_url = "http://ec2-35-93-22-81.us-west-2.compute.amazonaws.com:8000"
+
 client = OpenAI(
-    base_url=f"http://localhost:80",
+    base_url=base_url,
     api_key="blah",
 )
 
