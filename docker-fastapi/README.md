@@ -23,7 +23,10 @@ This application deploys an Arcee model to Amazon SageMaker and creates a FastAP
 3. Build and run the Docker container:
    ```
    docker build -t myimage .
-   docker run -d -e ENDPOINT_NAME="your-endpoint-name" -e REGION_NAME="your-region" --name mycontainer -p 80:80 myimage
+   export ENDPOINT_NAME=<your-endpoint-name>
+   export AWS_REGION=<your-region>
+   export API_KEY=<your_api_key>
+   docker run -d -e ENDPOINT_NAME=$ENDPOINT_NAME -e REGION_NAME=$AWS_REGION -e API_KEY=$API_KEY --name mycontainer -p 80:80 myimage
    ```
 
 4. The API is now accessible at `http://localhost:80`
@@ -36,7 +39,7 @@ This application deploys an Arcee model to Amazon SageMaker and creates a FastAP
 
 2. Deploy the CloudFormation stack:
    ```
-   aws cloudformation create-stack --stack-name my-sagemaker-api --template-body file://cloudformation/template.yaml --parameters ParameterKey=KeyName,ParameterValue=your-key-pair ParameterKey=VpcId,ParameterValue=vpc-xxxxxxxx ParameterKey=SubnetId,ParameterValue=subnet-xxxxxxxx
+   aws cloudformation create-stack --stack-name my-sagemaker-api --template-body file://cloudformation/instance.yaml --parameters ParameterKey=KeyName,ParameterValue=your-key-pair ParameterKey=VpcId,ParameterValue=vpc-xxxxxxxx ParameterKey=SubnetId,ParameterValue=subnet-xxxxxxxx
    ```
 
    Replace `your-key-pair` with the name of your EC2 key pair, `vpc-xxxxxxxx` with your VPC ID, and `subnet-xxxxxxxx` with your Subnet ID.
