@@ -3,3 +3,4 @@ sagemaker
 pytest
 fastapi
 httpx
+openai

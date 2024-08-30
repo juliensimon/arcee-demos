@@ -85,3 +85,21 @@ async def predict(request: Request):
         raise HTTPException(status_code=500, detail=f"Invalid JSON input: {str(json_err)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+
+@app.post("/chat/completions", dependencies=[Depends(get_api_key)])
+async def predict(request: Request):
+    ''' Invoke the SageMaker endpoint'''
+    try:
+        payload = await request.json()
+        print(payload)
+        response = sm_rt.invoke_endpoint(
+            EndpointName=endpoint_name,
+            ContentType='application/json',
+            Body=json.dumps(payload)
+        )
+        result = json.loads(response['Body'].read().decode())
+        return result
+    except json.JSONDecodeError as json_err:
+        raise HTTPException(status_code=500, detail=f"Invalid JSON input: {str(json_err)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
