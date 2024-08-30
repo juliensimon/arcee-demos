@@ -8,6 +8,22 @@ from requests import request
 def invoke(url="http://localhost:80", path="/", method="GET",
            headers={"Content-Type": "application/json"}, body=None,
            timeout=60):
+    """
+    Make an HTTP request to the specified URL with the given parameters.
+
+    Args:
+        url (str): The base URL for the request.
+        path (str): The path to append to the URL.
+        method (str): The HTTP method to use.
+        headers (dict): The headers to include in the request.
+        body (str): The request body.
+        timeout (int): The request timeout in seconds.
+
+    Returns:
+        Response: The response object from the request.
+    """
+    api_key = os.environ.get("API_KEY", "test_api_key")
+    headers["X-API-Key"] = api_key
     return request(method, f"{url}{path}", headers=headers, data=body, timeout=timeout)
 
 
@@ -59,6 +75,17 @@ def missing_user_body():
         "max_tokens": 256,
     }
 
+@pytest.fixture
+def api_key():
+    """
+    Fixture to set and unset the API_KEY environment variable.
+
+    Yields:
+        str: The API key value.
+    """
+    os.environ["API_KEY"] = "test_api_key"
+    yield "test_api_key"
+    del os.environ["API_KEY"]
 
 @pytest.fixture
 def invalid_json_body():
@@ -75,7 +102,7 @@ def invalid_json_body():
 # Success cases
 #
 
-def test_predict(body):
+def test_predict(body, api_key):
     response = invoke(path="/predict", method="POST", body=json.dumps(body))
     assert response.status_code == 200
     response_json = response.json()
@@ -88,7 +115,7 @@ def test_predict(body):
     assert response_json['choices'][0]['message']['content'] != ""
     assert response_json['usage']['completion_tokens'] > 0
 
-def test_predict_missing_model(missing_model_body):
+def test_predict_missing_model(missing_model_body, api_key):
     response = invoke(path="/predict", method="POST", body=json.dumps(missing_model_body))
     assert response.status_code == 200
  

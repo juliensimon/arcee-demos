@@ -1,8 +1,8 @@
 import boto3
 import json
 import os
-from fastapi import FastAPI, Request, HTTPException
-
+from fastapi import FastAPI, Request, HTTPException, Depends, Security
+from fastapi.security.api_key import APIKeyHeader, APIKey
 
 endpoint_name = os.environ.get("ENDPOINT_NAME")
 region_name = os.environ.get("REGION_NAME")
@@ -11,18 +11,43 @@ assert region_name is not None, "REGION_NAME environment variable is not set"
 print(f"Endpoint name: {endpoint_name}")
 print(f"Region name: {region_name}")
 
+API_KEY = os.environ.get("API_KEY")
+if API_KEY:
+    headers["X-API-Key"] = API_KEY
+else:
+    print("Warning: API_KEY environment variable is not set")
+
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+async def get_api_key(api_key_header: str = Security(api_key_header)):
+    """
+    Validate the API key.
+    
+    Args:
+        api_key_header (str): The API key from the request header.
+    
+    Returns:
+        str: The validated API key.
+    
+    Raises:
+        HTTPException: If the API key is invalid or missing.
+    """
+    if api_key_header == API_KEY:
+        return api_key_header
+    raise HTTPException(status_code=403, detail="Could not validate credentials")
+
 app = FastAPI()
 
 sm = boto3.client("sagemaker", region_name=region_name)
 sm_rt = boto3.client("sagemaker-runtime", region_name=region_name)
 
 
-@app.get("/")
+@app.get("/", dependencies=[Depends(get_api_key)])
 def ping():
     ''' Return ping message'''
     return {"endpoint name": endpoint_name, "region name": region_name}
 
-@app.get("/list_endpoints")
+@app.get("/list_endpoints", dependencies=[Depends(get_api_key)])
 def list_endpoints():
     ''' List all SageMaker endpoints'''
     endpoints = sm.list_endpoints()
@@ -46,7 +71,7 @@ def list_endpoints():
     
     return endpoint_details
 
-@app.post("/predict")
+@app.post("/predict", dependencies=[Depends(get_api_key)])
 async def predict(request: Request):
     ''' Invoke the SageMaker endpoint'''
     try:
