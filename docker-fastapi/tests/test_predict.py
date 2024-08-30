@@ -154,3 +154,7 @@ def test_predict_missing_messages(missing_messages_body):
     assert response_json["generated_text"] == ""
     assert response_json["details"]["finish_reason"] == "error"
 
+def test_predict_with_invalid_api_key():
+    response = invoke(path="/predict", method="POST", body=json.dumps(body))
+    assert response.status_code == 403
+

@@ -46,3 +46,10 @@ def test_list_endpoints():
         assert 'ModelEnvironment' in endpoint
         assert isinstance(endpoint['ModelEnvironment'], dict)
 
+def test_list_endpoints_with_invalid_api_key():
+    """
+    Test the /list_endpoints API endpoint with an invalid API key.
+    """
+    response = invoke(path="/list_endpoints", method="GET")
+    assert response.status_code == 403
+
