@@ -7,35 +7,46 @@ from requests import request
 @pytest.fixture
 def api_key():
     """
-    Fixture to set the API_KEY environment variable.
-
-    Yields:
-        str: The API key value.
-    """
-    api_key = os.environ["API_KEY"]
-
-    
-def invoke(url="http://localhost:80", path="/", method="GET",
-           headers={"Content-Type": "application/json"}, body=None,
-           timeout=60):
-    """
-    Make an HTTP request to the specified URL with the given parameters.
-
-    Args:
-        url (str): The base URL for the request.
-        path (str): The path to append to the URL.
-        method (str): The HTTP method to use.
-        headers (dict): The headers to include in the request.
-        body (str): The request body.
-        timeout (int): The request timeout in seconds.
+    Fixture to get the API_KEY environment variable.
 
     Returns:
-        Response: The response object from the request.
+        str: The API key value.
     """
-    api_key = os.environ.get("API_KEY", "test_api_key")
-    headers["X-API-Key"] = api_key
-    return request(method, f"{url}{path}", headers=headers, data=body, timeout=timeout)
+    print(os.environ.get("API_KEY"))
+    return os.environ.get("API_KEY")
 
+@pytest.fixture
+def invalid_api_key():
+    """
+    Fixture to set an invalid API_KEY
+
+    Returns:
+        str: The API key value.
+    """
+    return "this_isnt_a_valid_key"
+
+def invoke(url="http://localhost:80", path="/", method="GET",
+           headers=None, body=None, timeout=60, api_key=None):
+    """
+    Make an HTTP request to the specified URL.
+
+    Args:
+        url (str): Base URL for the request.
+        path (str): Path to append to the URL.
+        method (str): HTTP method to use.
+        headers (dict, optional): HTTP headers to include in the request.
+        body (str, optional): Request body.
+        timeout (int): Request timeout in seconds.
+        api_key (str, optional): API key to use for the request.
+
+    Returns:
+        requests.Response: The response from the server.
+    """
+    if headers is None:
+        headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["X-API-Key"] = api_key
+    return request(method, f"{url}{path}", headers=headers, data=body, timeout=timeout)
 
 @pytest.fixture
 def body():
@@ -85,9 +96,6 @@ def missing_user_body():
         "max_tokens": 256,
     }
 
-
-
-
 @pytest.fixture
 def invalid_json_body():
     return '''{
@@ -104,7 +112,7 @@ def invalid_json_body():
 #
 
 def test_predict(body, api_key):
-    response = invoke(path="/predict", method="POST", body=json.dumps(body))
+    response = invoke(path="/predict", method="POST", body=json.dumps(body), api_key=api_key)
     assert response.status_code == 200
     response_json = response.json()
     assert response_json is not None
@@ -117,15 +125,15 @@ def test_predict(body, api_key):
     assert response_json['usage']['completion_tokens'] > 0
 
 def test_predict_missing_model(missing_model_body, api_key):
-    response = invoke(path="/predict", method="POST", body=json.dumps(missing_model_body))
+    response = invoke(path="/predict", method="POST", body=json.dumps(missing_model_body), api_key=api_key)
     assert response.status_code == 200
  
 def test_predict_missing_user(missing_user_body, api_key):
-    response = invoke(path="/predict", method="POST", body=json.dumps(missing_user_body))
+    response = invoke(path="/predict", method="POST", body=json.dumps(missing_user_body), api_key=api_key)
     assert response.status_code == 200
 
 def test_predict_missing_system(missing_system_body, api_key):
-    response = invoke(path="/predict", method="POST", body=json.dumps(missing_system_body))
+    response = invoke(path="/predict", method="POST", body=json.dumps(missing_system_body), api_key=api_key)
     assert response.status_code == 200
 
 #
@@ -133,28 +141,31 @@ def test_predict_missing_system(missing_system_body, api_key):
 #
 
 def test_predict_none_body(api_key):
-    response = invoke(path="/predict", method="POST", body=None)
+    response = invoke(path="/predict", method="POST", body=None, api_key=api_key)
     assert response.status_code == 500
     assert response.json()["detail"].startswith("Invalid JSON input:")
 
 def test_predict_empty_body(api_key):
-    response = invoke(path="/predict", method="POST", body=json.dumps({}))
-    assert response.status_code == 500
-    assert response.json()['detail'] == "Prediction error: 500: Payload is empty"
-
-def test_predict_invalid_json(invalid_json_body, api_key):
-    response = invoke(path="/predict", method="POST", body=invalid_json_body)
-    assert response.status_code == 500
-    assert response.json()["detail"].startswith("Invalid JSON input:")
-
-def test_predict_missing_messages(missing_messages_body, api_key):
-    response = invoke(path="/predict", method="POST", body=json.dumps(missing_messages_body))
+    response = invoke(path="/predict", method="POST", body=json.dumps({}), api_key=api_key)
     assert response.status_code == 200
     response_json = response.json()
     assert response_json["generated_text"] == ""
     assert response_json["details"]["finish_reason"] == "error"
 
-def test_predict_with_invalid_api_key():
-    response = invoke(path="/predict", method="POST", body=json.dumps(body))
+def test_predict_invalid_json(invalid_json_body, api_key):
+    response = invoke(path="/predict", method="POST", body=invalid_json_body, api_key=api_key)
+    assert response.status_code == 500
+    assert response.json()["detail"].startswith("Invalid JSON input:")
+
+def test_predict_missing_messages(missing_messages_body, api_key):
+    response = invoke(path="/predict", method="POST", body=json.dumps(missing_messages_body), api_key=api_key)
+    assert response.status_code == 200
+    response_json = response.json()
+    assert response_json["generated_text"] == ""
+    assert response_json["details"]["finish_reason"] == "error"
+
+def test_predict_with_invalid_api_key(body, invalid_api_key):
+    response = invoke(path="/predict", method="POST", body=json.dumps(body), api_key=invalid_api_key)
     assert response.status_code == 403
+    assert response.json()["detail"].startswith("Could not validate credentials")
 

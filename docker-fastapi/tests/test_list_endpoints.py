@@ -5,17 +5,15 @@ from requests import request
 @pytest.fixture
 def api_key():
     """
-    Fixture to set the API_KEY environment variable.
+    Fixture to provide the API_KEY environment variable.
 
-    Yields:
+    Returns:
         str: The API key value.
     """
-    api_key = os.environ.get("API_KEY")
-
+    return os.environ.get("API_KEY")
 
 def invoke(url="http://localhost:80", path="/", method="GET",
-           headers={"Content-Type": "application/json"}, body=None,
-           timeout=60):
+           headers=None, body=None, timeout=60, api_key=None):
     """
     Make an HTTP request to the specified URL.
 
@@ -23,21 +21,25 @@ def invoke(url="http://localhost:80", path="/", method="GET",
         url (str): Base URL for the request.
         path (str): Path to append to the URL.
         method (str): HTTP method to use.
-        headers (dict): HTTP headers to include in the request.
+        headers (dict, optional): HTTP headers to include in the request.
         body (str, optional): Request body.
         timeout (int): Request timeout in seconds.
+        api_key (str, optional): API key to use for the request.
 
     Returns:
         requests.Response: The response from the server.
     """
-    headers["X-API-Key"] = api_key
+    if headers is None:
+        headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["X-API-Key"] = api_key
     return request(method, f"{url}{path}", headers=headers, data=body, timeout=timeout)
 
-def test_list_endpoints():
+def test_list_endpoints(api_key):
     """
     Test the /list_endpoints API endpoint.
     """
-    response = invoke(path="/list_endpoints", method="GET")
+    response = invoke(path="/list_endpoints", method="GET", api_key=api_key)
     assert response.status_code == 200
     
     data = response.json()
@@ -61,12 +63,7 @@ def test_list_endpoints_with_invalid_api_key():
     """
     Test the /list_endpoints API endpoint with an invalid API key.
     """
-    original_api_key = os.environ.get("API_KEY")
-    os.environ["API_KEY"] = "invalid_api_key"
-    response = invoke(path="/list_endpoints", method="GET")
+    response = invoke(path="/list_endpoints", method="GET", api_key="invalid_api_key")
     assert response.status_code == 403
-    if original_api_key:
-        os.environ["API_KEY"] = original_api_key
-    else:
-        del os.environ["API_KEY"]
+
 
