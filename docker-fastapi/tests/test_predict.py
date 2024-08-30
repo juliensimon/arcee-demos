@@ -119,12 +119,11 @@ def test_predict_missing_model(missing_model_body, api_key):
     response = invoke(path="/predict", method="POST", body=json.dumps(missing_model_body))
     assert response.status_code == 200
  
-def test_predict_missing_user(missing_user_body):
+def test_predict_missing_user(missing_user_body, api_key):
     response = invoke(path="/predict", method="POST", body=json.dumps(missing_user_body))
     assert response.status_code == 200
 
-
-def test_predict_missing_system(missing_system_body):
+def test_predict_missing_system(missing_system_body, api_key):
     response = invoke(path="/predict", method="POST", body=json.dumps(missing_system_body))
     assert response.status_code == 200
 
@@ -132,22 +131,22 @@ def test_predict_missing_system(missing_system_body):
 # Error cases
 #
 
-def test_predict_none_body():
+def test_predict_none_body(api_key):
     response = invoke(path="/predict", method="POST", body=None)
     assert response.status_code == 500
     assert response.json()["detail"].startswith("Invalid JSON input:")
 
-def test_predict_empty_body():
+def test_predict_empty_body(api_key):
     response = invoke(path="/predict", method="POST", body=json.dumps({}))
     assert response.status_code == 500
     assert response.json()['detail'] == "Prediction error: 500: Payload is empty"
 
-def test_predict_invalid_json(invalid_json_body):
+def test_predict_invalid_json(invalid_json_body, api_key):
     response = invoke(path="/predict", method="POST", body=invalid_json_body)
     assert response.status_code == 500
     assert response.json()["detail"].startswith("Invalid JSON input:")
 
-def test_predict_missing_messages(missing_messages_body):
+def test_predict_missing_messages(missing_messages_body, api_key):
     response = invoke(path="/predict", method="POST", body=json.dumps(missing_messages_body))
     assert response.status_code == 200
     response_json = response.json()

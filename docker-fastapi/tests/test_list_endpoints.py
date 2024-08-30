@@ -1,5 +1,22 @@
 import os
+import pytest
 from requests import request
+
+@pytest.fixture
+def api_key():
+    """
+    Fixture to set and unset the API_KEY environment variable.
+
+    Yields:
+        str: The API key value.
+    """
+    original_api_key = os.environ.get("API_KEY")
+    os.environ["API_KEY"] = "test_api_key"
+    yield "test_api_key"
+    if original_api_key:
+        os.environ["API_KEY"] = original_api_key
+    else:
+        del os.environ["API_KEY"]
 
 def invoke(url="http://localhost:80", path="/", method="GET",
            headers={"Content-Type": "application/json"}, body=None,
@@ -22,7 +39,7 @@ def invoke(url="http://localhost:80", path="/", method="GET",
     headers["X-API-Key"] = api_key
     return request(method, f"{url}{path}", headers=headers, data=body, timeout=timeout)
 
-def test_list_endpoints():
+def test_list_endpoints(api_key):
     """
     Test the /list_endpoints API endpoint.
     """
@@ -50,6 +67,12 @@ def test_list_endpoints_with_invalid_api_key():
     """
     Test the /list_endpoints API endpoint with an invalid API key.
     """
+    original_api_key = os.environ.get("API_KEY")
+    os.environ["API_KEY"] = "invalid_api_key"
     response = invoke(path="/list_endpoints", method="GET")
     assert response.status_code == 403
+    if original_api_key:
+        os.environ["API_KEY"] = original_api_key
+    else:
+        del os.environ["API_KEY"]
 
