@@ -5,18 +5,13 @@ from requests import request
 @pytest.fixture
 def api_key():
     """
-    Fixture to set and unset the API_KEY environment variable.
+    Fixture to set the API_KEY environment variable.
 
     Yields:
         str: The API key value.
     """
-    original_api_key = os.environ.get("API_KEY")
-    os.environ["API_KEY"] = "test_api_key"
-    yield "test_api_key"
-    if original_api_key:
-        os.environ["API_KEY"] = original_api_key
-    else:
-        del os.environ["API_KEY"]
+    api_key = os.environ.get("API_KEY")
+
 
 def invoke(url="http://localhost:80", path="/", method="GET",
            headers={"Content-Type": "application/json"}, body=None,
@@ -35,11 +30,10 @@ def invoke(url="http://localhost:80", path="/", method="GET",
     Returns:
         requests.Response: The response from the server.
     """
-    api_key = os.environ.get("API_KEY", "test_api_key")
     headers["X-API-Key"] = api_key
     return request(method, f"{url}{path}", headers=headers, data=body, timeout=timeout)
 
-def test_list_endpoints(api_key):
+def test_list_endpoints():
     """
     Test the /list_endpoints API endpoint.
     """
