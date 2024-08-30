@@ -9,6 +9,19 @@ Parameters:
     AllowedPattern: .+
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
 
+  ApiKey:
+    Description: UUID for the FastAPI service API key
+    Type: String
+    AllowedPattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+    ConstraintDescription: must be a valid UUID.
+
+  EndpointName:
+    Description: Name of the Sagemaker endpoint (not the URL)
+    Type: String
+    MinLength: 1
+    AllowedPattern: .+
+    ConstraintDescription: must not be empty.
+
   InstanceType:
     Description: EC2 instance type
     Default: t3.small
@@ -41,7 +54,7 @@ Parameters:
 
 
   SubnetId:
-    Description: Subnet to launch the instance into
+    Description: public subnet to launch the instance into
     Type: AWS::EC2::Subnet::Id
     AllowedPattern: ^subnet-[a-z0-9]+$
     ConstraintDescription: Must be a valid subnet ID starting with 'subnet-'.
@@ -82,6 +95,9 @@ Resources:
               # Build the Docker image
               cd arcee-demos/docker-fastapi/container
               docker build -t docker-fastapi .
+              # Run the Docker container
+              docker run -d -e API_KEY=${ApiKey} -e ENDPOINT_NAME=${EndpointName} -e REGION_NAME=${AWS::Region} -p 8000:80 docker-fastapi
+
 
   EC2Instance:
     Type: AWS::EC2::Instance
@@ -98,7 +114,7 @@ Resources:
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Enable SSH access, FastAPI access, and all outbound traffic
+      GroupDescription: Enable SSH access, FastAPI access on port 8000, and all outbound traffic
       VpcId: !Ref 'VpcId'
       SecurityGroupIngress:
         - IpProtocol: tcp
