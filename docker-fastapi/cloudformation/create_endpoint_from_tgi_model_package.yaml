@@ -178,3 +178,7 @@ Outputs:
   EndpointName:
     Description: Name of the SageMaker Endpoint
     Value: !GetAtt SageMakerEndpoint.EndpointName
+
+  EndpointUrl:
+    Description: URL of the SageMaker Endpoint
+    Value: !GetAtt SageMakerEndpoint.EndpointUrl
