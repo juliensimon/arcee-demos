@@ -12,9 +12,7 @@ print(f"Endpoint name: {endpoint_name}")
 print(f"Region name: {region_name}")
 
 API_KEY = os.environ.get("API_KEY")
-if API_KEY:
-    headers["X-API-Key"] = API_KEY
-else:
+if not API_KEY:
     print("Warning: API_KEY environment variable is not set")
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
