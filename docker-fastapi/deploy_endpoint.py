@@ -1,11 +1,9 @@
-# flake8: noqa: E501
 
 """Module for deploying a model to a SageMaker endpoint."""
 
 import boto3
 import sagemaker
 from sagemaker.djl_inference.model import DJLModel
-
 
 if __name__ == "__main__":
 
@@ -30,12 +28,18 @@ if __name__ == "__main__":
         model_id=MODEL_ID,
         role=role,
         env={
-            "OPTION_DTYPE": "bf16",  # Use bfloat16 data type for improved performance
-            "OPTION_MAX_MODEL_LEN": "4096",  # Set maximum sequence length
-            "OPTION_TRUST_REMOTE_CODE": "true",  # Allow execution of remote code
-            "OPTION_ROLLING_BATCH": "vllm",  # Enable rolling batch processing using vllm
-            "TENSOR_PARALLEL_DEGREE": "max",  # Use maximum tensor parallelism
-            "OPTION_MAX_ROLLING_BATCH_SIZE": "16",  # Set rolling batch size
+            # Use bfloat16 data type for improved performance
+            "OPTION_DTYPE": "bf16",
+            # Set maximum sequence length
+            "OPTION_MAX_MODEL_LEN": "4096",
+            # Allow execution of remote code
+            "OPTION_TRUST_REMOTE_CODE": "true",
+            # Enable rolling batch processing using vllm
+            "OPTION_ROLLING_BATCH": "vllm",
+            # Use maximum tensor parallelism
+            "TENSOR_PARALLEL_DEGREE": "max",
+            # Set rolling batch size
+            "OPTION_MAX_ROLLING_BATCH_SIZE": "16",
         },
         sagemaker_session=sagemaker_session
     )

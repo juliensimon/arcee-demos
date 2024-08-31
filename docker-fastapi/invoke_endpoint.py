@@ -1,10 +1,9 @@
 """Module for invoking API endpoints with various HTTP methods."""
 
-# flake8: noqa: E501
-
-import os
 import json
+import os
 import pprint
+
 from requests import request
 
 
@@ -38,7 +37,8 @@ def invoke(url="http://localhost:80", path="/", method="GET",
     else:
         print("Warning: API_KEY environment variable is not set")
 
-    return request(method, f"{url}{path}", headers=headers, data=body, timeout=timeout)
+    return request(method, f"{url}{path}", headers=headers,
+                   data=body, timeout=timeout)
 
 
 if __name__ == "__main__":
