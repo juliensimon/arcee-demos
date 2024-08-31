@@ -1,7 +1,11 @@
+"""Module for invoking API endpoints with various HTTP methods."""
+
+# flake8: noqa: E501
+
+import os
 import json
 import pprint
 from requests import request
-import os
 
 
 def invoke(url="http://localhost:80", path="/", method="GET",
@@ -22,11 +26,11 @@ def invoke(url="http://localhost:80", path="/", method="GET",
     """
     if headers is None:
         headers = {}
-    
+
     # Add Content-Type if not present
     if "Content-Type" not in headers:
         headers["Content-Type"] = "application/json"
-    
+
     # Add API key to headers
     api_key = os.environ.get("API_KEY")
     if api_key:
@@ -49,15 +53,22 @@ if __name__ == "__main__":
     assert response.status_code == 200
     pprint.pprint(response.json())
 
-    body = {
+    sample_request = {
         "model": "arcee-ai/Arcee-Scribe",
         "messages": [
-            {"role": "system", "content": "As a friendly technical assistant engineer, answer the question in detail."},
-            {"role": "user", "content": "Why are transformers better models than LSTM?"}
+            {
+                "role": "system",
+                "content": ("As a friendly technical assistant engineer, "
+                            "answer the question in detail.")
+            },
+            {
+                "role": "user",
+                "content": "Why are transformers better models than LSTM?"
+            }
         ],
         "max_tokens": 256,
     }
-    response = invoke(url=URL, path="/predict", method="POST", body=json.dumps(body))
+    response = invoke(url=URL, path="/predict", method="POST",
+                      body=json.dumps(sample_request))
     assert response.status_code == 200
     pprint.pprint(response.json())
-
