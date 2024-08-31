@@ -1,3 +1,7 @@
+# flake8: noqa: E501
+
+"""Module for deploying a model to a SageMaker endpoint."""
+
 import boto3
 import sagemaker
 from sagemaker.djl_inference.model import DJLModel
@@ -13,8 +17,9 @@ if __name__ == "__main__":
     boto3.setup_default_session(region_name=REGION)
     sagemaker_session = sagemaker.Session(boto3.Session(region_name=REGION))
 
-    # Prerequisite: make sure that the IAM role for the EC2 instance has the necessary permissions to 
-    # create and manage SageMaker resources (e.g., SageMakerFullAccess) as well as a trust policy that 
+    # Prerequisite: make sure that the IAM role for the EC2 instance has the
+    # necessary permissions to create and manage SageMaker resources
+    # (e.g., SageMakerFullAccess) as well as a trust policy that
     # allows SageMaker to assume the role, see trust-policy.json
 
     # Get the IAM execution role for SageMaker
@@ -37,9 +42,12 @@ if __name__ == "__main__":
 
     # Deploy the model to create a SageMaker endpoint
     predictor = model.deploy(
-        initial_instance_count=1,  # Start with one instance
-        instance_type=INSTANCE_TYPE,  # Use the specified instance type
-        container_startup_health_check_timeout=300,  # Set timeout for container startup health check
+        # Start with one instance
+        initial_instance_count=1,
+        # Use the specified instance type
+        instance_type=INSTANCE_TYPE,
+        # Set timeout for container startup health check
+        container_startup_health_check_timeout=300
     )
 
     # Print the name of the created endpoint
