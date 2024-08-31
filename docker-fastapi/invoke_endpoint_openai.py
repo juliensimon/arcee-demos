@@ -1,3 +1,5 @@
+"""Module for interacting with an OpenAI-compatible API endpoint."""
+
 import os
 from openai import OpenAI
 
@@ -6,18 +8,21 @@ API_KEY = os.environ.get("API_KEY")
 headers = {}
 headers["X-API-Key"] = API_KEY
 
-base_url = "http://ec2-35-93-22-81.us-west-2.compute.amazonaws.com:8000"
+BASE_URL = "http://ec2-35-93-22-81.us-west-2.compute.amazonaws.com:8000"
 
 client = OpenAI(
-    base_url=base_url,
+    base_url=BASE_URL,
     api_key="blah",
 )
 
 chat_completion = client.chat.completions.create(
     model="scribe",
     messages=[
-        {"role": "system", "content": "You are a helpful technical assistant giving detailed and factual answers." },
-        {"role": "user", "content": "Why are transformers better models than LSTM?"}
+        {"role": "system",
+         "content": ("You are a helpful technical assistant giving detailed "
+                     "and factual answers.")},
+        {"role": "user",
+         "content": "Why are transformers better models than LSTM?"}
     ],
     stream=False,
     max_tokens=500,
