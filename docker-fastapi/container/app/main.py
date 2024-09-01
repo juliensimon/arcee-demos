@@ -1,49 +1,72 @@
-import boto3
+"""FastAPI application for interacting with SageMaker endpoints."""
+
 import json
 import os
-from fastapi import FastAPI, Request, HTTPException, Depends, Security
-from fastapi.security.api_key import APIKeyHeader, APIKey
 
-endpoint_name = os.environ.get("ENDPOINT_NAME")
-region_name = os.environ.get("REGION_NAME")
-assert endpoint_name is not None, "ENDPOINT_NAME environment variable is not set"
-assert region_name is not None, "REGION_NAME environment variable is not set"
-print(f"Endpoint name: {endpoint_name}")
-print(f"Region name: {region_name}")
+import boto3
+from fastapi import Depends, FastAPI, HTTPException, Request, Security
+from fastapi.security.api_key import APIKeyHeader
 
-API_KEY = os.environ.get("API_KEY")
-if not API_KEY:
-    print("Warning: API_KEY environment variable is not set")
+APP_VERSION = "0.0.1"
+
+
+def get_env_var(var_name):
+    """
+    Get environment variable and assert it's set.
+
+    Args:
+        var_name (str): Name of the environment variable.
+
+    Returns:
+        str: Value of the environment variable.
+
+    Raises:
+        AssertionError: If the environment variable is not set.
+    """
+    var = os.environ.get(var_name)
+    assert var is not None, f"{var_name} environment variable is not set"
+    print(f"{var_name}: {var}")
+    return var
+
+
+API_KEY = get_env_var("API_KEY")
+ENDPOINT_NAME = get_env_var("ENDPOINT_NAME")
+REGION_NAME = get_env_var("REGION_NAME")
+REGION_NAME = os.environ.get("REGION_NAME")
+
+app = FastAPI()
+sm = boto3.client("sagemaker", region_name=REGION_NAME)
+sm_rt = boto3.client("sagemaker-runtime", region_name=REGION_NAME)
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
-async def get_api_key(api_key_header: str = Security(api_key_header)):
+
+async def get_api_key(api_key: str = Security(api_key_header)):
     """
     Validate the API key.
-    
+
     Args:
-        api_key_header (str): The API key from the request header.
-    
+        api_key (str): The API key from the request header.
+
     Returns:
         str: The validated API key.
-    
+
     Raises:
         HTTPException: If the API key is invalid or missing.
     """
-    if api_key_header == API_KEY:
-        return api_key_header
-    raise HTTPException(status_code=403, detail="Could not validate credentials")
-
-app = FastAPI()
-
-sm = boto3.client("sagemaker", region_name=region_name)
-sm_rt = boto3.client("sagemaker-runtime", region_name=region_name)
+    if api_key == API_KEY:
+        return api_key
+    raise HTTPException(
+        status_code=403,
+        detail="Could not validate credentials"
+    )
 
 
 @app.get("/", dependencies=[Depends(get_api_key)])
 def ping():
     ''' Return ping message'''
-    return {"endpoint name": endpoint_name, "region name": region_name}
+    return {"sagemaker-proxy": APP_VERSION}
+
 
 @app.get("/list_endpoints", dependencies=[Depends(get_api_key)])
 def list_endpoints():
@@ -51,23 +74,25 @@ def list_endpoints():
     endpoints = sm.list_endpoints()
     endpoint_details = []
     for endpoint in endpoints['Endpoints']:
-        endpoint_description = sm.describe_endpoint(EndpointName=endpoint['EndpointName'])
-        endpoint_config = sm.describe_endpoint_config(EndpointConfigName=endpoint_description['EndpointConfigName'])
+        endpoint_description = sm.describe_endpoint(
+            EndpointName=endpoint['EndpointName']
+        )
+        endpoint_config = sm.describe_endpoint_config(
+            EndpointConfigName=endpoint_description['EndpointConfigName']
+        )
         production_variant = endpoint_config['ProductionVariants'][0]
-        
         model_name = production_variant['ModelName']
         model_details = sm.describe_model(ModelName=model_name)
-        
         endpoint_details.append({
             'EndpointName': endpoint['EndpointName'],
             'InstanceType': production_variant['InstanceType'],
             'Container': model_details['PrimaryContainer']['Image'],
-            'ModelEnvironment': model_details['PrimaryContainer'].get('Environment', {}),
-        
+            'ModelEnvironment': model_details['PrimaryContainer'].get(
+                'Environment', {}
+            ),
         })
-        
-    
     return endpoint_details
+
 
 @app.post("/predict", dependencies=[Depends(get_api_key)])
 async def predict(request: Request):
@@ -75,31 +100,50 @@ async def predict(request: Request):
     try:
         payload = await request.json()
         response = sm_rt.invoke_endpoint(
-            EndpointName=endpoint_name,
+            EndpointName=ENDPOINT_NAME,
             ContentType='application/json',
             Body=json.dumps(payload)
         )
         result = json.loads(response['Body'].read().decode())
         return result
     except json.JSONDecodeError as json_err:
-        raise HTTPException(status_code=500, detail=f"Invalid JSON input: {str(json_err)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Invalid JSON input: {str(json_err)}"
+        ) from json_err
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Prediction error: {str(e)}"
+        ) from e
+
 
 @app.post("/chat/completions", dependencies=[Depends(get_api_key)])
-async def predict(request: Request):
-    ''' Invoke the SageMaker endpoint'''
+async def chat_completions(request: Request):
+    ''' Invoke the SageMaker endpoint with the OpenAI Message format'''
     try:
         payload = await request.json()
         print(payload)
         response = sm_rt.invoke_endpoint(
-            EndpointName=endpoint_name,
+            EndpointName=ENDPOINT_NAME,
             ContentType='application/json',
             Body=json.dumps(payload)
         )
         result = json.loads(response['Body'].read().decode())
         return result
     except json.JSONDecodeError as json_err:
-        raise HTTPException(status_code=500, detail=f"Invalid JSON input: {str(json_err)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Invalid JSON input: {str(json_err)}"
+        ) from json_err
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Prediction error: {str(e)}"
+        ) from e
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000,
+                ssl_keyfile="/ssl/key.pem",
+                ssl_certfile="/ssl/cert.pem")

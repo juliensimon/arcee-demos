@@ -1,6 +1,7 @@
 """Module for interacting with an OpenAI-compatible API endpoint."""
 
 import os
+
 from openai import OpenAI
 
 API_KEY = os.environ.get("API_KEY")
@@ -8,7 +9,7 @@ API_KEY = os.environ.get("API_KEY")
 headers = {}
 headers["X-API-Key"] = API_KEY
 
-BASE_URL = "http://ec2-35-93-22-81.us-west-2.compute.amazonaws.com:8000"
+BASE_URL = "https://ec2-35-93-22-81.us-west-2.compute.amazonaws.com:8000"
 
 client = OpenAI(
     base_url=BASE_URL,

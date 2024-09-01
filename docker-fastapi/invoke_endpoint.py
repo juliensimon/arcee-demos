@@ -7,7 +7,7 @@ import pprint
 from requests import request
 
 
-def invoke(url="http://localhost:80", path="/", method="GET",
+def invoke(url="https://localhost:8000", path="/", method="GET",
            headers=None, body=None, timeout=60):
     """
     Invoke an endpoint with the given parameters.
@@ -43,7 +43,7 @@ def invoke(url="http://localhost:80", path="/", method="GET",
 
 if __name__ == "__main__":
 
-    URL = "http://ec2-35-93-22-81.us-west-2.compute.amazonaws.com:8000"
+    URL = "https://ec2-35-93-22-81.us-west-2.compute.amazonaws.com:8000"
 
     response = invoke(url=URL)
     assert response.status_code == 200

@@ -38,15 +38,8 @@ def invalid_api_key():
     return "this_isnt_a_valid_key"
 
 
-def invoke(
-    url="http://localhost:80",
-    path="/",
-    method="GET",
-    headers=None,
-    body=None,
-    timeout=60,
-    api_key=None,
-):
+def invoke(url="https://localhost:8000", path="/", method="GET",
+           headers=None, body=None, timeout=60, api_key=None):
     """
     Make an HTTP request to the specified URL.
 

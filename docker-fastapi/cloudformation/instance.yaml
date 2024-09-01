@@ -96,7 +96,7 @@ Resources:
               cd arcee-demos/docker-fastapi/container
               docker build -t docker-fastapi .
               # Run the Docker container
-              docker run -d -e API_KEY=${ApiKey} -e ENDPOINT_NAME=${EndpointName} -e REGION_NAME=${AWS::Region} -p 8000:80 docker-fastapi
+              docker run -d -e API_KEY=${ApiKey} -e ENDPOINT_NAME=${EndpointName} -e REGION_NAME=${AWS::Region} -p 8000:8000 docker-fastapi
 
 
   EC2Instance:

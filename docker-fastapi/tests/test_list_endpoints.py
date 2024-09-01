@@ -19,7 +19,7 @@ def api_key():
     return os.environ.get("API_KEY")
 
 
-def invoke(url="http://localhost:80", path="/", method="GET",
+def invoke(url="https://localhost:8000", path="/", method="GET",
            headers=None, body=None, timeout=60, api_key=None):
     """
     Make an HTTP request to the specified URL.
