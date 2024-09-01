@@ -24,14 +24,14 @@ Parameters:
 
   InstanceType:
     Description: EC2 instance type
-    Default: t3.small
+    Default: t3.micro
     Type: String
     AllowedValues: [t3.micro, t3.small, t3.medium]
     ConstraintDescription: must be a valid EC2 instance type.
 
   InstanceName:
     Description: Name tag for the EC2 instance
-    Default: docker-fastapi-sagemaker-instance
+    Default: sagemaker-proxy-instance
     Type: String
     MinLength: 1
     AllowedPattern: .+
@@ -90,14 +90,8 @@ Resources:
               # Allow ec2-user to access the Docker socket
               usermod -a -G docker ec2-user
               chown ec2-user:docker /var/run/docker.sock
-              # Clone the repo
-              git clone https://gitlab.com/juliensimon/arcee-demos
-              # Build the Docker image
-              cd arcee-demos/docker-fastapi/container
-              docker build -t docker-fastapi .
               # Run the Docker container
-              docker run -d -e API_KEY=${ApiKey} -e ENDPOINT_NAME=${EndpointName} -e REGION_NAME=${AWS::Region} -p 8000:8000 docker-fastapi
-
+              docker run -d -e API_KEY=${ApiKey} -e ENDPOINT_NAME=${EndpointName} -e REGION_NAME=${AWS::Region} -p 8000:8000 juliensimon/sagemaker-proxy:latest
 
   EC2Instance:
     Type: AWS::EC2::Instance
