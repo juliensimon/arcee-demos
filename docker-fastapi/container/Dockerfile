@@ -16,9 +16,9 @@ ENV PYTHONUNBUFFERED=1 \
 
 COPY ./requirements.txt /code/requirements.txt
 
-COPY ./key.pem /ssl/key.pem
+COPY ../ssl/key.pem /ssl/key.pem
 
-COPY ./cert.pem /ssl/cert.pem
+COPY ../ssl/cert.pem /ssl/cert.pem
 
 COPY ./app /code/app
 

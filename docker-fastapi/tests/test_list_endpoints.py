@@ -41,7 +41,7 @@ def invoke(url="https://localhost:8000", path="/", method="GET",
     if api_key:
         headers["X-API-Key"] = api_key
     return request(method, f"{url}{path}", headers=headers, data=body,
-                   timeout=timeout)
+                   timeout=timeout, verify=False)
 
 
 def test_list_endpoints(api_key):

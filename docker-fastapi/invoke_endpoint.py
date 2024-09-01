@@ -6,7 +6,6 @@ import pprint
 
 from requests import request
 
-
 def invoke(url="https://localhost:8000", path="/", method="GET",
            headers=None, body=None, timeout=60):
     """
@@ -38,12 +37,13 @@ def invoke(url="https://localhost:8000", path="/", method="GET",
         print("Warning: API_KEY environment variable is not set")
 
     return request(method, f"{url}{path}", headers=headers,
-                   data=body, timeout=timeout)
+                   data=body, timeout=timeout, verify=False)
 
 
 if __name__ == "__main__":
 
-    URL = "https://ec2-35-93-22-81.us-west-2.compute.amazonaws.com:8000"
+    #URL = "https://ec2-35-93-22-81.us-west-2.compute.amazonaws.com:8000"
+    URL = 'https://localhost:8000'
 
     response = invoke(url=URL)
     assert response.status_code == 200
