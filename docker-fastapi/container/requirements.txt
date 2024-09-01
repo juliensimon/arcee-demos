@@ -1,4 +1,4 @@
-fastapi
-uvicorn[standard]
+fastapi[standard]
 cryptography
 boto3
+setuptools

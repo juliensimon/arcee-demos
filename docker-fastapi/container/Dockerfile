@@ -26,5 +26,5 @@ COPY ./app /code/app
 RUN pip install --upgrade pip
 RUN pip install --upgrade -r /code/requirements.txt
 
-CMD ["fastapi", "run", "app/main.py", "--port", "80"]
+CMD ["python3", "app/main.py"]
 
