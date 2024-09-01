@@ -16,11 +16,11 @@ ENV PYTHONUNBUFFERED=1 \
 
 COPY ./requirements.txt /code/requirements.txt
 
-COPY ./ssl/key.pem /ssl/key.pem
+COPY ./ssl/key.pem ssl/key.pem
 
-COPY ./ssl/cert.pem /ssl/cert.pem
+COPY ./ssl/cert.pem ssl/cert.pem
 
-COPY ./app /code/app
+COPY ./app app
 
 # Install system dependencies
 RUN pip install --upgrade pip

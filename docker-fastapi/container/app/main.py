@@ -12,7 +12,7 @@ APP_VERSION = "0.0.1"
 
 def get_env_var(var_name):
     """
-    Get environment variable and assert it's set.
+    Get environment variable and assert it is set.
 
     Args:
         var_name (str): Name of the environment variable.
@@ -38,7 +38,7 @@ app = FastAPI()
 sm = boto3.client("sagemaker", region_name=REGION_NAME)
 sm_rt = boto3.client("sagemaker-runtime", region_name=REGION_NAME)
 
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
 
 
 async def get_api_key(api_key: str = Security(api_key_header)):
@@ -54,8 +54,8 @@ async def get_api_key(api_key: str = Security(api_key_header)):
     Raises:
         HTTPException: If the API key is invalid or missing.
     """
-    if api_key == API_KEY:
-        return api_key
+    if api_key == f"Bearer {API_KEY}":
+        return api_key.split(' ')[1]
     raise HTTPException(
         status_code=403,
         detail="Could not validate credentials"
@@ -145,5 +145,5 @@ async def chat_completions(request: Request):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000,
-                ssl_keyfile="/ssl/key.pem",
-                ssl_certfile="/ssl/cert.pem")
+                ssl_keyfile="ssl/key.pem",
+                ssl_certfile="ssl/cert.pem")
