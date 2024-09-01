@@ -6,6 +6,11 @@ import pprint
 
 from requests import request
 
+HOSTNAME = "ec2-35-87-44-203.us-west-2.compute.amazonaws.com"
+# HOSTNAME = "localhost"
+
+PORT_NUMBER=8000
+
 def invoke(url="https://localhost:8000", path="/", method="GET",
            headers=None, body=None, timeout=60):
     """
@@ -42,8 +47,8 @@ def invoke(url="https://localhost:8000", path="/", method="GET",
 
 if __name__ == "__main__":
 
-    #URL = "https://ec2-35-93-22-81.us-west-2.compute.amazonaws.com:8000"
-    URL = 'https://localhost:8000'
+    URL = f"https://{HOSTNAME}:{PORT_NUMBER}"
+    print(URL)
 
     response = invoke(url=URL)
     assert response.status_code == 200

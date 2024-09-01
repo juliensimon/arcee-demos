@@ -4,12 +4,15 @@ import os
 
 from openai import OpenAI
 
+HOSTNAME = "ec2-35-87-44-203.us-west-2.compute.amazonaws.com"
+PORT = 8000
+
 API_KEY = os.environ.get("API_KEY")
 
 headers = {}
 headers["X-API-Key"] = API_KEY
 
-BASE_URL = "https://ec2-35-93-22-81.us-west-2.compute.amazonaws.com:8000"
+BASE_URL = f"https://{HOSTNAME}:{PORT}"
 
 client = OpenAI(
     base_url=BASE_URL,
