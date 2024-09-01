@@ -1,10 +1,9 @@
 import os
 from requests import request
 
-API_KEY = os.environ.get("API_KEY")
 
 def invoke(url="https://localhost:8000", path="/", method="GET",
-           headers=None, body=None, timeout=60, api_key=API_KEY):
+           headers=None, body=None, timeout=60, api_key=None):
     """
     Invoke an endpoint with the given parameters.
 

@@ -13,6 +13,7 @@ import os
 
 import pytest
 from requests import request
+from invoke import invoke
 
 
 @pytest.fixture
@@ -23,8 +24,10 @@ def api_key():
     Returns:
         str: The API key value.
     """
-    print(os.environ.get("API_KEY"))
-    return os.environ.get("API_KEY")
+    api_key = os.environ.get("API_KEY")
+    if api_key is None:
+        raise ValueError("API_KEY environment variable is not set")
+    return api_key
 
 
 @pytest.fixture
@@ -36,31 +39,6 @@ def invalid_api_key():
         str: The API key value.
     """
     return "this_isnt_a_valid_key"
-
-
-def invoke(url="https://localhost:8000", path="/", method="GET",
-           headers=None, body=None, timeout=60, api_key=None):
-    """
-    Make an HTTP request to the specified URL.
-
-    Args:
-        url (str): Base URL for the request.
-        path (str): Path to append to the URL.
-        method (str): HTTP method to use.
-        headers (dict, optional): HTTP headers to include in the request.
-        body (str, optional): Request body.
-        timeout (int): Request timeout in seconds.
-        api_key (str, optional): API key to use for the request.
-
-    Returns:
-        requests.Response: The response from the server.
-    """
-    if headers is None:
-        headers = {"Content-Type": "application/json"}
-    if api_key:
-        headers["X-API-Key"] = api_key
-    return request(method, f"{url}{path}", headers=headers,
-                   data=body, timeout=timeout, verify=False)
 
 
 @pytest.fixture

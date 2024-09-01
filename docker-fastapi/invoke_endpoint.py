@@ -18,7 +18,7 @@ if __name__ == "__main__":
     assert response.status_code == 200
     pprint.pprint(response.json())
 
-    response = invoke(url=URL, path="/list_endpoints", method="GET")
+    response = invoke(url=URL, path="/list_endpoints")
     assert response.status_code == 200
     pprint.pprint(response.json())
 
