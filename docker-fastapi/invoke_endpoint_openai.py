@@ -1,38 +1,49 @@
 """Module for interacting with an OpenAI-compatible API endpoint."""
 
 import os
+import sys
 import requests
 import openai
 import httpx
 from openai import OpenAI
 
-HOSTNAME = "localhost"
-PORT = 8000
+if __name__ == "__main__":
 
-API_KEY = os.environ.get("API_KEY")
+    if len(sys.argv) < 3:
+        print("Usage: python invoke_endpoint.py <hostname> <port_number>")
+        exit(1)
 
-BASE_URL = f"https://{HOSTNAME}:{PORT}"
+    API_KEY = os.environ.get("API_KEY")
+    if API_KEY is None:
+        print("API_KEY environment variable is not set.")
+        exit(1)
 
-# Create a custom HTTPX client to disable SSL verification
-client = httpx.Client(verify=False)
+    HOSTNAME = sys.argv[1]
+    PORT_NUMBER = int(sys.argv[2])
 
-# Set the custom client in the OpenAI library
-client = OpenAI(
-        base_url = BASE_URL,
-        api_key = API_KEY,
-        http_client = client)
+    BASE_URL = f"https://{HOSTNAME}:{PORT_NUMBER}"
+    print(f"Connecting to {BASE_URL}")
+    # Create a custom HTTPX client to disable SSL verification
+    client = httpx.Client(verify=False)
 
-response = client.chat.completions.create(
-    model="scribe",
-    messages=[
-        {"role": "system",
-         "content": ("You are a helpful technical assistant giving detailed "
-                     "and factual answers.")},
-        {"role": "user",
-         "content": "Why are transformers better models than LSTM?"}
-    ],
-    stream=False,
-    max_tokens=500,
-)
+    # Set the custom client in the OpenAI library
+    client = OpenAI(
+        base_url=BASE_URL,
+        api_key=API_KEY,
+        http_client=client
+    )
 
-print(response.choices[0].message.content)
+    response = client.chat.completions.create(
+        model="scribe",
+        messages=[
+            {"role": "system",
+             "content": ("You are a helpful technical assistant giving detailed "
+                         "and factual answers.")},
+            {"role": "user",
+             "content": "Why are transformers better models than LSTM?"}
+        ],
+        stream=False,
+        max_tokens=500,
+    )
+
+    print(response.choices[0].message.content)

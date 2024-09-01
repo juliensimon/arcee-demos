@@ -42,7 +42,7 @@ def invalid_api_key():
 
 
 @pytest.fixture
-def body():
+def body_openai():
     """
     Fixture that provides a valid request body for the predict endpoint.
 
@@ -65,6 +65,29 @@ def body():
         "max_tokens": 256,
     }
 
+@pytest.fixture
+def body_transformers():
+    """
+    Fixture that provides a valid request body for the predict endpoint.
+
+    Returns:
+        dict: A dictionary containing model, messages, and max_tokens.
+    """
+    return {
+        "model": "arcee-ai/Arcee-Scribe",
+        "messages": [
+            {
+                "role": "system",
+                "content": ("As a friendly technical assistant engineer, "
+                            "answer the question in detail."),
+            },
+            {
+                "role": "user",
+                "content": "Why are transformers better models than LSTM?",
+            },
+        ],
+        "max_tokens": 256,
+    }
 
 @pytest.fixture
 def missing_model_body():
@@ -173,7 +196,7 @@ def invalid_json_body():
 #
 
 
-def test_predict(body, api_key):
+def test_predict_openai(body_openai, api_key):
     """
     Test the predict endpoint with valid input.
 
@@ -187,7 +210,34 @@ def test_predict(body, api_key):
         - Completion tokens are greater than 0
     """
     response = invoke(
-        path="/predict", method="POST", body=json.dumps(body), api_key=api_key
+        path="/predict", method="POST", body=json.dumps(body_openai), api_key=api_key
+    )
+    assert response.status_code == 200
+    response_json = response.json()
+    assert response_json is not None
+    assert "choices" in response_json
+    assert len(response_json["choices"]) > 0
+    assert "message" in response_json["choices"][0]
+    assert "content" in response_json["choices"][0]["message"]
+    assert response_json["choices"][0]["message"]["content"] is not None
+    assert response_json["choices"][0]["message"]["content"] != ""
+    assert response_json["usage"]["completion_tokens"] > 0
+
+def test_predict_transformers(body_transformers, api_key):
+    """
+    Test the predict endpoint with valid input.
+
+    Args:
+        body (dict): The request body containing model and message data.
+        api_key (str): The API key for authentication.
+
+    Asserts:
+        - Response status code is 200
+        - Response JSON contains expected keys and non-empty values
+        - Completion tokens are greater than 0
+    """
+    response = invoke(
+        path="/predict", method="POST", body=json.dumps(body_transformers), api_key=api_key
     )
     assert response.status_code == 200
     response_json = response.json()
