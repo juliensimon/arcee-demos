@@ -23,6 +23,7 @@ COPY ./ssl/cert.pem /ssl/cert.pem
 COPY ./app /code/app
 
 # Install system dependencies
+RUN pip install --upgrade pip
 RUN pip install --upgrade -r /code/requirements.txt
 
 CMD ["fastapi", "run", "app/main.py", "--port", "80"]
