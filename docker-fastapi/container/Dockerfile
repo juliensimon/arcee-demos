@@ -3,7 +3,7 @@
 # docker run -d  -e ENDPOINT_NAME="djl-inference-2024-08-24-11-57-00-390" -e REGION_NAME="us-west-2" --name mycontainer -p 80:80 myimage
 
 # Use a more specific and lighter base image
-FROM python:3.9-slim-buster
+FROM python:alpine
 
 # Set working directory
 WORKDIR /code
