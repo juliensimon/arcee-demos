@@ -399,7 +399,7 @@ def test_predict_missing_messages(missing_messages_body, api_key):
     assert response_json["details"]["finish_reason"] == "error"
 
 
-def test_predict_with_invalid_api_key(body, invalid_api_key):
+def test_predict_with_invalid_api_key(body_transformers, invalid_api_key):
     """
     Test the predict endpoint with an invalid API key.
 
@@ -414,7 +414,7 @@ def test_predict_with_invalid_api_key(body, invalid_api_key):
     response = invoke(
         path="/predict",
         method="POST",
-        body=json.dumps(body),
+        body=json.dumps(body_transformers),
         api_key=invalid_api_key,
     )
     assert response.status_code == 403
