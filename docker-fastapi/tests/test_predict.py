@@ -15,6 +15,12 @@ import pytest
 from requests import request
 from invoke import invoke
 
+response = invoke(path="/list_endpoints", api_key=os.environ.get("API_KEY"))
+assert response.status_code == 200
+endpoints_data = response.json()
+assert len(endpoints_data) > 0, "No endpoints are currently in service"
+endpoint_name = endpoints_data[0]['EndpointName']
+print(f"Using endpoint: {endpoint_name}")
 
 @pytest.fixture
 def api_key():
@@ -50,7 +56,7 @@ def body_openai():
         dict: A dictionary containing model, messages, and max_tokens.
     """
     return {
-        "model": "arcee-ai/Arcee-Scribe",
+        "model": endpoint_name,
         "messages": [
             {
                 "role": "system",
@@ -74,19 +80,11 @@ def body_transformers():
         dict: A dictionary containing model, messages, and max_tokens.
     """
     return {
-        "model": "arcee-ai/Arcee-Scribe",
-        "messages": [
-            {
-                "role": "system",
-                "content": ("As a friendly technical assistant engineer, "
-                            "answer the question in detail."),
-            },
-            {
-                "role": "user",
-                "content": "Why are transformers better models than LSTM?",
-            },
-        ],
-        "max_tokens": 256,
+        "model": endpoint_name,
+        "inputs": "Why are transformers better models than LSTM?",
+        "parameters": {
+            "max_new_tokens": 256,
+        }
     }
 
 @pytest.fixture
@@ -122,7 +120,7 @@ def missing_messages_body():
         dict: A dictionary containing model and max_tokens, but no messages.
     """
     return {
-        "model": "arcee-ai/Arcee-Scribe",
+        "model": endpoint_name,
         "max_tokens": 256,
     }
 
@@ -137,7 +135,7 @@ def missing_system_body():
         but no system message.
     """
     return {
-        "model": "arcee-ai/Arcee-Scribe",
+        "model": endpoint_name,
         "messages": [
             {
                 "role": "user",
@@ -158,7 +156,7 @@ def missing_user_body():
         but no user message.
     """
     return {
-        "model": "arcee-ai/Arcee-Scribe",
+        "model": endpoint_name,
         "messages": [
             {
                 "role": "system",
@@ -179,7 +177,7 @@ def invalid_json_body():
         str: An invalid JSON string missing a comma after the "model" key.
     """
     return """{
-        "model": "arcee-ai/Arcee-Scribe"
+        "model": endpoint_name,
         "messages": [
             {"role": "system", "content": ("As a friendly technical assistant "
                                           "engineer, answer the question in "
@@ -241,14 +239,10 @@ def test_predict_transformers(body_transformers, api_key):
     )
     assert response.status_code == 200
     response_json = response.json()
+    print(response_json)
     assert response_json is not None
-    assert "choices" in response_json
-    assert len(response_json["choices"]) > 0
-    assert "message" in response_json["choices"][0]
-    assert "content" in response_json["choices"][0]["message"]
-    assert response_json["choices"][0]["message"]["content"] is not None
-    assert response_json["choices"][0]["message"]["content"] != ""
-    assert response_json["usage"]["completion_tokens"] > 0
+    assert "generated_text" in response_json
+    assert len(response_json["generated_text"]) > 0
 
 
 def test_predict_missing_model(missing_model_body, api_key):
@@ -260,7 +254,7 @@ def test_predict_missing_model(missing_model_body, api_key):
         api_key (str): The API key for authentication.
 
     Asserts:
-        - Response status code is 200
+        - Response status code is 500
     """
     response = invoke(
         path="/predict",
@@ -268,7 +262,7 @@ def test_predict_missing_model(missing_model_body, api_key):
         body=json.dumps(missing_model_body),
         api_key=api_key,
     )
-    assert response.status_code == 200
+    assert response.status_code == 500
 
 
 def test_predict_missing_user(missing_user_body, api_key):
@@ -342,17 +336,14 @@ def test_predict_empty_body(api_key):
         api_key (str): The API key for authentication.
 
     Asserts:
-        - Response status code is 200
+        - Response status code is 500
         - Response JSON contains an empty generated text
         and an error finish reason
     """
     response = invoke(
         path="/predict", method="POST", body=json.dumps({}), api_key=api_key
     )
-    assert response.status_code == 200
-    response_json = response.json()
-    assert response_json["generated_text"] == ""
-    assert response_json["details"]["finish_reason"] == "error"
+    assert response.status_code == 500
 
 
 def test_predict_invalid_json(invalid_json_body, api_key):

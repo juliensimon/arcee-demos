@@ -6,6 +6,7 @@ import requests
 import openai
 import httpx
 from openai import OpenAI
+from invoke import invoke
 
 if __name__ == "__main__":
 
@@ -20,9 +21,16 @@ if __name__ == "__main__":
 
     HOSTNAME = sys.argv[1]
     PORT_NUMBER = int(sys.argv[2])
-
     BASE_URL = f"https://{HOSTNAME}:{PORT_NUMBER}"
     print(f"Connecting to {BASE_URL}")
+
+    response = invoke(url=BASE_URL, path="/list_endpoints")
+    assert response.status_code == 200
+    endpoints_data = response.json()
+    assert len(endpoints_data) > 0, "No endpoints are currently in service"
+    endpoint_name = endpoints_data[0]['EndpointName']
+    print(f"Using endpoint: {endpoint_name}")
+
     # Create a custom HTTPX client to disable SSL verification
     client = httpx.Client(verify=False)
 
@@ -34,7 +42,7 @@ if __name__ == "__main__":
     )
 
     response = client.chat.completions.create(
-        model="scribe",
+        model=endpoint_name,
         messages=[
             {"role": "system",
              "content": ("You are a helpful technical assistant giving detailed "

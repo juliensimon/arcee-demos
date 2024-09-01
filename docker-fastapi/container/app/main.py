@@ -9,6 +9,7 @@ from fastapi.security.api_key import APIKeyHeader
 
 APP_VERSION = "0.0.1"
 
+ENDPOINTS = []
 
 def get_env_var(var_name):
     """
@@ -30,9 +31,7 @@ def get_env_var(var_name):
 
 
 API_KEY = get_env_var("API_KEY")
-ENDPOINT_NAME = get_env_var("ENDPOINT_NAME")
 REGION_NAME = get_env_var("REGION_NAME")
-REGION_NAME = os.environ.get("REGION_NAME")
 
 app = FastAPI()
 sm = boto3.client("sagemaker", region_name=REGION_NAME)
@@ -72,6 +71,7 @@ def ping():
 def list_endpoints():
     ''' List all SageMaker endpoints'''
     endpoints = sm.list_endpoints()
+    ENDPOINTS = [endpoint['EndpointName'] for endpoint in endpoints['Endpoints']]
     endpoint_details = []
     for endpoint in endpoints['Endpoints']:
         endpoint_description = sm.describe_endpoint(
@@ -85,6 +85,7 @@ def list_endpoints():
         model_details = sm.describe_model(ModelName=model_name)
         endpoint_details.append({
             'EndpointName': endpoint['EndpointName'],
+            'EndpointStatus': endpoint['EndpointStatus'],
             'InstanceType': production_variant['InstanceType'],
             'Container': model_details['PrimaryContainer']['Image'],
             'ModelEnvironment': model_details['PrimaryContainer'].get(
@@ -96,23 +97,97 @@ def list_endpoints():
 
 @app.post("/predict", dependencies=[Depends(get_api_key)])
 async def predict(request: Request):
-    ''' Invoke the SageMaker endpoint'''
+    """
+    Invoke the SageMaker endpoint.
+
+    Args:
+        request (Request): The request object containing the payload.
+        endpoint_name (str): The name of the SageMaker endpoint.
+
+    Returns:
+        dict: The prediction result.
+
+    Raises:
+        HTTPException: If there is an error with the prediction.
+    """
     try:
+        global ENDPOINTS
         payload = await request.json()
+        endpoint_name = payload['model']
+        if endpoint_name not in ENDPOINTS:
+            # Refresh the list of endpoints
+            endpoints = sm.list_endpoints()
+            ENDPOINTS = [endpoint['EndpointName'] for endpoint in endpoints['Endpoints']]
+            if endpoint_name not in ENDPOINTS:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Endpoint {endpoint_name} not found"
+                )
 
         response = sm_rt.invoke_endpoint(
-            EndpointName=ENDPOINT_NAME,
+            EndpointName=endpoint_name,
             ContentType='application/json',
             Body=json.dumps(payload)
         )
         result = json.loads(response['Body'].read().decode())
         return result
     except json.JSONDecodeError as json_err:
+        print(f"JSON decode error: {json_err}")
         raise HTTPException(
             status_code=500,
             detail=f"Invalid JSON input: {str(json_err)}"
         ) from json_err
     except Exception as e:
+        print(f"Prediction error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Prediction error: {str(e)}"
+        ) from e
+    
+@app.post("/chat/completions", dependencies=[Depends(get_api_key)])
+async def chat_completions(request: Request):
+    """
+    Invoke the SageMaker endpoint.
+
+    Args:
+        request (Request): The request object containing the payload.
+        endpoint_name (str): The name of the SageMaker endpoint.
+
+    Returns:
+        dict: The prediction result.
+
+    Raises:
+        HTTPException: If there is an error with the prediction.
+    """
+    try:
+        global ENDPOINTS
+        payload = await request.json()
+        endpoint_name = payload['model']
+        if endpoint_name not in ENDPOINTS:
+            # Refresh the list of endpoints
+            endpoints = sm.list_endpoints()
+            ENDPOINTS = [endpoint['EndpointName'] for endpoint in endpoints['Endpoints']]
+            if endpoint_name not in ENDPOINTS:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Endpoint {endpoint_name} not found"
+                )
+
+        response = sm_rt.invoke_endpoint(
+            EndpointName=endpoint_name,
+            ContentType='application/json',
+            Body=json.dumps(payload)
+        )
+        result = json.loads(response['Body'].read().decode())
+        return result
+    except json.JSONDecodeError as json_err:
+        print(f"JSON decode error: {json_err}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Invalid JSON input: {str(json_err)}"
+        ) from json_err
+    except Exception as e:
+        print(f"Prediction error: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Prediction error: {str(e)}"

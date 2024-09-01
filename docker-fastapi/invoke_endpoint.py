@@ -29,10 +29,15 @@ if __name__ == "__main__":
 
     response = invoke(url=URL, path="/list_endpoints")
     assert response.status_code == 200
+    endpoints_data = response.json()
     pprint.pprint(response.json())
+    assert len(endpoints_data) > 0, "No endpoints are currently in service"
+
+    endpoint_name = endpoints_data[0]['EndpointName']
+    print(f"Using endpoint: {endpoint_name}")
 
     sample_request = {
-        "model": "arcee-ai/Arcee-Scribe",
+        "model": endpoint_name,
         "messages": [
             {
                 "role": "system",
@@ -46,7 +51,8 @@ if __name__ == "__main__":
         ],
         "max_tokens": 256,
     }
-    response = invoke(url=URL, path="/predict", method="POST",
+    response = invoke(url=URL, path=f"/predict", method="POST",
                       body=json.dumps(sample_request))
+    print(response.content)
     assert response.status_code == 200
     pprint.pprint(response.json())
