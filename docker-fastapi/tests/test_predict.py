@@ -12,15 +12,15 @@ import json
 import os
 
 import pytest
-from requests import request
 from invoke import invoke
 
 response = invoke(path="/list_endpoints", api_key=os.environ.get("API_KEY"))
 assert response.status_code == 200
 endpoints_data = response.json()
 assert len(endpoints_data) > 0, "No endpoints are currently in service"
-endpoint_name = endpoints_data[0]['EndpointName']
+endpoint_name = endpoints_data[0]["EndpointName"]
 print(f"Using endpoint: {endpoint_name}")
+
 
 @pytest.fixture
 def api_key():
@@ -60,8 +60,10 @@ def body_openai():
         "messages": [
             {
                 "role": "system",
-                "content": ("As a friendly technical assistant engineer, "
-                            "answer the question in detail."),
+                "content": (
+                    "As a friendly technical assistant engineer, "
+                    "answer the question in detail."
+                ),
             },
             {
                 "role": "user",
@@ -70,6 +72,7 @@ def body_openai():
         ],
         "max_tokens": 256,
     }
+
 
 @pytest.fixture
 def body_transformers():
@@ -84,8 +87,9 @@ def body_transformers():
         "inputs": "Why are transformers better models than LSTM?",
         "parameters": {
             "max_new_tokens": 256,
-        }
+        },
     }
+
 
 @pytest.fixture
 def missing_model_body():
@@ -99,8 +103,10 @@ def missing_model_body():
         "messages": [
             {
                 "role": "system",
-                "content": ("As a friendly technical assistant engineer, "
-                            "answer the question in detail."),
+                "content": (
+                    "As a friendly technical assistant engineer, "
+                    "answer the question in detail."
+                ),
             },
             {
                 "role": "user",
@@ -160,8 +166,10 @@ def missing_user_body():
         "messages": [
             {
                 "role": "system",
-                "content": ("As a friendly technical assistant engineer, "
-                            "answer the question in detail."),
+                "content": (
+                    "As a friendly technical assistant engineer, "
+                    "answer the question in detail."
+                ),
             },
         ],
         "max_tokens": 256,
@@ -221,6 +229,7 @@ def test_predict_openai(body_openai, api_key):
     assert response_json["choices"][0]["message"]["content"] != ""
     assert response_json["usage"]["completion_tokens"] > 0
 
+
 def test_predict_transformers(body_transformers, api_key):
     """
     Test the predict endpoint with valid input.
@@ -235,7 +244,10 @@ def test_predict_transformers(body_transformers, api_key):
         - Completion tokens are greater than 0
     """
     response = invoke(
-        path="/predict", method="POST", body=json.dumps(body_transformers), api_key=api_key
+        path="/predict",
+        method="POST",
+        body=json.dumps(body_transformers),
+        api_key=api_key,
     )
     assert response.status_code == 200
     response_json = response.json()
@@ -322,8 +334,7 @@ def test_predict_none_body(api_key):
         - Response status code is 500
         - Response JSON contains an error message about invalid JSON input
     """
-    response = invoke(path="/predict", method="POST",
-                      body=None, api_key=api_key)
+    response = invoke(path="/predict", method="POST", body=None, api_key=api_key)
     assert response.status_code == 500
     assert response.json()["detail"].startswith("Invalid JSON input:")
 
@@ -409,5 +420,4 @@ def test_predict_with_invalid_api_key(body_transformers, invalid_api_key):
         api_key=invalid_api_key,
     )
     assert response.status_code == 403
-    assert response.json()["detail"].startswith(
-        "Could not validate credentials")
+    assert response.json()["detail"].startswith("Could not validate credentials")

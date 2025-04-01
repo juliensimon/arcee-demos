@@ -99,14 +99,14 @@ Parameters:
   ModelEnvironmentMessagesApiEnabled:
     Type: String
     Description: Whether to enable the OpenAI Messages API
-    AllowedValues: ["true", "false"] 
+    AllowedValues: ["true", "false"]
     Default: "true"
     ConstraintDescription: ModelEnvironmentMessagesApiEnabled must be 'true' or 'false'
 
   ModelEnvironmentHfModelQuantize:
     Type: String
     Description: The quantization format for the model weights (leave empty for no quantization)
-    AllowedValues: ["", "bitsandbytes", "bitsandbytes-nf4", "bitsandbytes-np4"] 
+    AllowedValues: ["", "bitsandbytes", "bitsandbytes-nf4", "bitsandbytes-np4"]
     Default: ""
     ConstraintDescription: ModelEnvironmentHfModelQuantize must be 'None', 'bitsandbytes', 'bitsandbytes-nf4', 'bitsandbytes-np4'
 
@@ -114,9 +114,9 @@ Resources:
   SageMakerModel:
     Type: AWS::SageMaker::Model
     Properties:
-      PrimaryContainer: 
+      PrimaryContainer:
         ModelPackageName: !Ref ModelPackageName
-        Environment: 
+        Environment:
           "HF_MODEL_ID": "/opt/ml/model"
           "HF_DTYPE": !Ref ModelEnvironmentDataType
           "MAX_INPUT_LENGTH": !Ref ModelEnvironmentMaxInputLength
@@ -131,7 +131,7 @@ Resources:
   SageMakerEndpointConfig:
     Type: AWS::SageMaker::EndpointConfig
     Properties:
-      ProductionVariants: 
+      ProductionVariants:
         - InitialInstanceCount: !Ref InitialInstanceCount
           InstanceType: !Ref InstanceType
           ModelName: !GetAtt SageMakerModel.ModelName
@@ -140,7 +140,7 @@ Resources:
   SageMakerEndpoint:
     Type: AWS::SageMaker::Endpoint
     Properties:
-      EndpointName: 
+      EndpointName:
         Fn::Join:
           - "-"
           - - !Ref EndpointNamePrefix
@@ -178,7 +178,3 @@ Outputs:
   EndpointName:
     Description: Name of the SageMaker Endpoint
     Value: !GetAtt SageMakerEndpoint.EndpointName
-
-  EndpointUrl:
-    Description: URL of the SageMaker Endpoint
-    Value: !GetAtt SageMakerEndpoint.EndpointUrl

@@ -43,7 +43,7 @@ class LineIterator:
         while True:
             self.buffer.seek(self.read_pos)
             line = self.buffer.readline()
-            if line and line[-1] == ord('\n'):
+            if line and line[-1] == ord("\n"):
                 self.read_pos += len(line)
                 return line[:-1]
             try:
@@ -52,28 +52,29 @@ class LineIterator:
                 if self.read_pos < self.buffer.getbuffer().nbytes:
                     continue
                 raise
-            if 'PayloadPart' not in chunk:
-                print('Unknown event type:' + chunk)
+            if "PayloadPart" not in chunk:
+                print("Unknown event type:" + chunk)
                 continue
             self.buffer.seek(0, io.SEEK_END)
-            self.buffer.write(chunk['PayloadPart']['Bytes'])
+            self.buffer.write(chunk["PayloadPart"]["Bytes"])
 
 
 # https://aws.amazon.com/blogs/machine-learning/elevating-the-generative-ai-experience-introducing-streaming-support-in-amazon-sagemaker-hosting/
 # Modified to support the OpenAI messages format and display the total number of tokens
 
+
 def print_event_stream(event_stream):
-    start_json = b'{'
-    stop_token = '</s>'
+    start_json = b"{"
+    stop_token = "</s>"
 
     for line in LineIterator(event_stream):
-        if line != b'' and start_json in line:
-            data = json.loads(line[line.find(start_json):].decode('utf-8'))
-            #print(data)
-            data = data['choices'][0]
-            if "content" in data['delta']:
-                content = data['delta']['content']
+        if line != b"" and start_json in line:
+            data = json.loads(line[line.find(start_json) :].decode("utf-8"))
+            # print(data)
+            data = data["choices"][0]
+            if "content" in data["delta"]:
+                content = data["delta"]["content"]
                 if content != stop_token:
-                    print(content, end='')
+                    print(content, end="")
                 else:
                     print(f"\n\nNumber of tokens: {data['index']}")

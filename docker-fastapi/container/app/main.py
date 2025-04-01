@@ -11,6 +11,7 @@ APP_VERSION = "0.0.1"
 
 ENDPOINTS = []
 
+
 def get_env_var(var_name):
     """
     Get environment variable and assert it is set.
@@ -54,44 +55,44 @@ async def get_api_key(api_key: str = Security(api_key_header)):
         HTTPException: If the API key is invalid or missing.
     """
     if api_key == f"Bearer {API_KEY}":
-        return api_key.split(' ')[1]
-    raise HTTPException(
-        status_code=403,
-        detail="Could not validate credentials"
-    )
+        return api_key.split(" ")[1]
+    raise HTTPException(status_code=403, detail="Could not validate credentials")
 
 
 @app.get("/", dependencies=[Depends(get_api_key)])
 def ping():
-    ''' Return ping message'''
+    """Return ping message"""
     return {"sagemaker-proxy": APP_VERSION}
 
 
 @app.get("/list_endpoints", dependencies=[Depends(get_api_key)])
 def list_endpoints():
-    ''' List all SageMaker endpoints'''
+    """List all SageMaker endpoints"""
+    global ENDPOINTS
     endpoints = sm.list_endpoints()
-    ENDPOINTS = [endpoint['EndpointName'] for endpoint in endpoints['Endpoints']]
+    ENDPOINTS = [endpoint["EndpointName"] for endpoint in endpoints["Endpoints"]]
     endpoint_details = []
-    for endpoint in endpoints['Endpoints']:
+    for endpoint in endpoints["Endpoints"]:
         endpoint_description = sm.describe_endpoint(
-            EndpointName=endpoint['EndpointName']
+            EndpointName=endpoint["EndpointName"]
         )
         endpoint_config = sm.describe_endpoint_config(
-            EndpointConfigName=endpoint_description['EndpointConfigName']
+            EndpointConfigName=endpoint_description["EndpointConfigName"]
         )
-        production_variant = endpoint_config['ProductionVariants'][0]
-        model_name = production_variant['ModelName']
+        production_variant = endpoint_config["ProductionVariants"][0]
+        model_name = production_variant["ModelName"]
         model_details = sm.describe_model(ModelName=model_name)
-        endpoint_details.append({
-            'EndpointName': endpoint['EndpointName'],
-            'EndpointStatus': endpoint['EndpointStatus'],
-            'InstanceType': production_variant['InstanceType'],
-            'Container': model_details['PrimaryContainer']['Image'],
-            'ModelEnvironment': model_details['PrimaryContainer'].get(
-                'Environment', {}
-            ),
-        })
+        endpoint_details.append(
+            {
+                "EndpointName": endpoint["EndpointName"],
+                "EndpointStatus": endpoint["EndpointStatus"],
+                "InstanceType": production_variant["InstanceType"],
+                "Container": model_details["PrimaryContainer"]["Image"],
+                "ModelEnvironment": model_details["PrimaryContainer"].get(
+                    "Environment", {}
+                ),
+            }
+        )
     return endpoint_details
 
 
@@ -113,37 +114,37 @@ async def predict(request: Request):
     try:
         global ENDPOINTS
         payload = await request.json()
-        endpoint_name = payload['model']
+        endpoint_name = payload["model"]
         if endpoint_name not in ENDPOINTS:
             # Refresh the list of endpoints
             endpoints = sm.list_endpoints()
-            ENDPOINTS = [endpoint['EndpointName'] for endpoint in endpoints['Endpoints']]
+            ENDPOINTS = [
+                endpoint["EndpointName"] for endpoint in endpoints["Endpoints"]
+            ]
             if endpoint_name not in ENDPOINTS:
                 raise HTTPException(
-                    status_code=404,
-                    detail=f"Endpoint {endpoint_name} not found"
+                    status_code=404, detail=f"Endpoint {endpoint_name} not found"
                 )
 
         response = sm_rt.invoke_endpoint(
             EndpointName=endpoint_name,
-            ContentType='application/json',
-            Body=json.dumps(payload)
+            ContentType="application/json",
+            Body=json.dumps(payload),
         )
-        result = json.loads(response['Body'].read().decode())
+        result = json.loads(response["Body"].read().decode())
         return result
     except json.JSONDecodeError as json_err:
         print(f"JSON decode error: {json_err}")
         raise HTTPException(
-            status_code=500,
-            detail=f"Invalid JSON input: {str(json_err)}"
+            status_code=500, detail=f"Invalid JSON input: {str(json_err)}"
         ) from json_err
     except Exception as e:
         print(f"Prediction error: {e}")
         raise HTTPException(
-            status_code=500,
-            detail=f"Prediction error: {str(e)}"
+            status_code=500, detail=f"Prediction error: {str(e)}"
         ) from e
-    
+
+
 @app.post("/chat/completions", dependencies=[Depends(get_api_key)])
 async def chat_completions(request: Request):
     """
@@ -162,39 +163,44 @@ async def chat_completions(request: Request):
     try:
         global ENDPOINTS
         payload = await request.json()
-        endpoint_name = payload['model']
+        endpoint_name = payload["model"]
         if endpoint_name not in ENDPOINTS:
             # Refresh the list of endpoints
             endpoints = sm.list_endpoints()
-            ENDPOINTS = [endpoint['EndpointName'] for endpoint in endpoints['Endpoints']]
+            ENDPOINTS = [
+                endpoint["EndpointName"] for endpoint in endpoints["Endpoints"]
+            ]
             if endpoint_name not in ENDPOINTS:
                 raise HTTPException(
-                    status_code=404,
-                    detail=f"Endpoint {endpoint_name} not found"
+                    status_code=404, detail=f"Endpoint {endpoint_name} not found"
                 )
 
         response = sm_rt.invoke_endpoint(
             EndpointName=endpoint_name,
-            ContentType='application/json',
-            Body=json.dumps(payload)
+            ContentType="application/json",
+            Body=json.dumps(payload),
         )
-        result = json.loads(response['Body'].read().decode())
+        result = json.loads(response["Body"].read().decode())
         return result
     except json.JSONDecodeError as json_err:
         print(f"JSON decode error: {json_err}")
         raise HTTPException(
-            status_code=500,
-            detail=f"Invalid JSON input: {str(json_err)}"
+            status_code=500, detail=f"Invalid JSON input: {str(json_err)}"
         ) from json_err
     except Exception as e:
         print(f"Prediction error: {e}")
         raise HTTPException(
-            status_code=500,
-            detail=f"Prediction error: {str(e)}"
+            status_code=500, detail=f"Prediction error: {str(e)}"
         ) from e
+
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000,
-                ssl_keyfile="ssl/key.pem",
-                ssl_certfile="ssl/cert.pem")
+
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8000,
+        ssl_keyfile="ssl/key.pem",
+        ssl_certfile="ssl/cert.pem",
+    )

@@ -44,7 +44,7 @@ xformers_attention:
 flash_attention: true
 
 warmup_steps: 100
-evals_per_epoch: 
+evals_per_epoch:
 eval_table_size:
 saves_per_epoch:
 debug:

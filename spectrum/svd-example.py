@@ -7,7 +7,7 @@ to decompose and reconstruct the matrix with a specified number of singular valu
 import numpy as np
 
 N = 1024  # Matrix dimension
-top_k = 1024 # Rank of the matrix
+top_k = 1024  # Rank of the matrix
 
 C = np.random.rand(N, N)
 print(f"Original matrix C shape: {C.shape}, Number of parameters: {C.size:,}")
@@ -20,7 +20,7 @@ print(f"Sigma: {Sigma.shape}")
 print(f"Vt: {Vt.shape}")
 
 # Create diagonal matrix from Sigma and keep only top k singular values
-Sigma = np.diag(Sigma)  # Convert to diagonal matrix 
+Sigma = np.diag(Sigma)  # Convert to diagonal matrix
 Sigma_k = Sigma[:top_k, :top_k]  # Keep only top k x k submatrix
 
 # Keep only top k singular values/vectors
@@ -35,6 +35,5 @@ print(f"Total parameters in reduced form: {U_k.size + Sigma_k.size + Vt_k.size:,
 
 # Reconstruct the matrix and compute error
 C_reconstructed = U_k @ Sigma_k @ Vt_k
-reconstruction_error = np.linalg.norm(C - C_reconstructed, 'fro')
+reconstruction_error = np.linalg.norm(C - C_reconstructed, "fro")
 print(f"Frobenius norm: {reconstruction_error:.2e}")
-

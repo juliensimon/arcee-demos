@@ -1,13 +1,13 @@
-
 """Module for deploying a model to a SageMaker endpoint."""
 
 import boto3
+
 import sagemaker
 from sagemaker.djl_inference.model import DJLModel
 
 if __name__ == "__main__":
 
-    REGION = 'us-west-2'
+    REGION = "us-west-2"
     MODEL_ID = "arcee-ai/Arcee-Scribe"
     INSTANCE_TYPE = "ml.g5.2xlarge"
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
             # Set rolling batch size
             "OPTION_MAX_ROLLING_BATCH_SIZE": "16",
         },
-        sagemaker_session=sagemaker_session
+        sagemaker_session=sagemaker_session,
     )
 
     # Deploy the model to create a SageMaker endpoint
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         # Use the specified instance type
         instance_type=INSTANCE_TYPE,
         # Set timeout for container startup health check
-        container_startup_health_check_timeout=300
+        container_startup_health_check_timeout=300,
     )
 
     # Print the name of the created endpoint

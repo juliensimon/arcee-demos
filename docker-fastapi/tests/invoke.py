@@ -1,9 +1,17 @@
 import os
+
 from requests import request
 
 
-def invoke(url="https://localhost:8000", path="/", method="GET",
-           headers=None, body=None, timeout=60, api_key=None):
+def invoke(
+    url="https://localhost:8000",
+    path="/",
+    method="GET",
+    headers=None,
+    body=None,
+    timeout=60,
+    api_key=None,
+):
     """
     Invoke an endpoint with the given parameters.
 
@@ -22,7 +30,13 @@ def invoke(url="https://localhost:8000", path="/", method="GET",
         headers = {}
 
     headers["Content-Type"] = "application/json"
-    headers["Authorization"] = f"Bearer {api_key}"        
+    headers["Authorization"] = f"Bearer {api_key}"
 
-    return request(method, f"{url}{path}", headers=headers,
-                   data=body, timeout=timeout, verify=False)
+    return request(
+        method,
+        f"{url}{path}",
+        headers=headers,
+        data=body,
+        timeout=timeout,
+        verify=False,
+    )

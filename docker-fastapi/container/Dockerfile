@@ -27,4 +27,3 @@ RUN pip install --upgrade pip
 RUN pip install --upgrade -r /code/requirements.txt
 
 CMD ["python3", "app/main.py"]
-

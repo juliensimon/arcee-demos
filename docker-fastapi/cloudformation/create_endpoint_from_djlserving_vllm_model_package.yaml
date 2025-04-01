@@ -79,9 +79,9 @@ Resources:
   SageMakerModel:
     Type: AWS::SageMaker::Model
     Properties:
-      PrimaryContainer: 
+      PrimaryContainer:
         ModelPackageName: !Ref ModelPackageName
-        Environment: 
+        Environment:
           "OPTION_DTYPE": !Ref ModelEnvironmentDataType
           "OPTION_MAX_MODEL_LEN": !Ref ModelEnvironmentMaxModelLen
           "OPTION_TRUST_REMOTE_CODE": !Ref ModelEnvironmentTrustRemoteCode
@@ -93,7 +93,7 @@ Resources:
   SageMakerEndpointConfig:
     Type: AWS::SageMaker::EndpointConfig
     Properties:
-      ProductionVariants: 
+      ProductionVariants:
         - InitialInstanceCount: !Ref InitialInstanceCount
           InstanceType: !Ref InstanceType
           ModelName: !GetAtt SageMakerModel.ModelName
@@ -102,7 +102,7 @@ Resources:
   SageMakerEndpoint:
     Type: AWS::SageMaker::Endpoint
     Properties:
-      EndpointName: 
+      EndpointName:
         Fn::Join:
           - "-"
           - - !Ref EndpointNamePrefix
@@ -140,7 +140,3 @@ Outputs:
   EndpointName:
     Description: Name of the SageMaker Endpoint
     Value: !GetAtt SageMakerEndpoint.EndpointName
-
-  EndpointUrl:
-    Description: URL of the SageMaker Endpoint
-    Value: !GetAtt SageMakerEndpoint.EndpointUrl

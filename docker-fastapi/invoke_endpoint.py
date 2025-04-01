@@ -7,15 +7,14 @@ import sys
 
 from invoke import invoke
 
-
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Usage: python invoke_endpoint.py <hostname> <port_number>")
-        exit(1)
+        sys.exit(1)
 
     if os.environ.get("API_KEY") is None:
         print("API_KEY environment variable is not set.")
-        exit(1)
+        sys.exit(1)
 
     HOSTNAME = sys.argv[1]
     PORT_NUMBER = int(sys.argv[2])
@@ -33,7 +32,7 @@ if __name__ == "__main__":
     pprint.pprint(response.json())
     assert len(endpoints_data) > 0, "No endpoints are currently in service"
 
-    endpoint_name = endpoints_data[0]['EndpointName']
+    endpoint_name = endpoints_data[0]["EndpointName"]
     print(f"Using endpoint: {endpoint_name}")
 
     sample_request = {
@@ -41,18 +40,21 @@ if __name__ == "__main__":
         "messages": [
             {
                 "role": "system",
-                "content": ("As a friendly technical assistant engineer, "
-                            "answer the question in detail.")
+                "content": (
+                    "As a friendly technical assistant engineer, "
+                    "answer the question in detail."
+                ),
             },
             {
                 "role": "user",
-                "content": "Why are transformers better models than LSTM?"
-            }
+                "content": "Why are transformers better models than LSTM?",
+            },
         ],
         "max_tokens": 256,
     }
-    response = invoke(url=URL, path=f"/predict", method="POST",
-                      body=json.dumps(sample_request))
+    response = invoke(
+        url=URL, path=f"/predict", method="POST", body=json.dumps(sample_request)
+    )
     print(response.content)
     assert response.status_code == 200
     pprint.pprint(response.json())

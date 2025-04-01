@@ -68,7 +68,7 @@ Resources:
         SecurityGroupIds:
           - !Ref 'InstanceSecurityGroup'
         UserData:
-          Fn::Base64: 
+          Fn::Base64:
             !Sub |
               #!/bin/bash
               # Update all packages
