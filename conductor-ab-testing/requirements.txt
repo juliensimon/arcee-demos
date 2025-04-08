@@ -1,0 +1,6 @@
+torch
+transformers
+accelerate
+sentence-transformers
+gradio
+openai

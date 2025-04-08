@@ -1,0 +1,149 @@
+#similarity-metrics {
+    font-family: monospace;
+    line-height: 1.5;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px;
+}
+#metrics-summary {
+    background-color: #f0f7ff;
+    border-radius: 8px;
+    padding: 10px;
+    font-style: italic;
+}
+.center-text {
+    text-align: center;
+}
+.feedback-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+.feedback-status {
+    font-style: italic;
+    text-align: center;
+    margin-top: 5px;
+    color: #4CAF50;
+}
+#feedback-data {
+    font-family: monospace;
+    white-space: pre-wrap;
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: #f5f5f5;
+    padding: 10px;
+    border-radius: 8px;
+}
+.file-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+.warning-btn {
+    background-color: #f44336 !important;
+    color: white !important;
+}
+.warning-btn:hover {
+    background-color: #d32f2f !important;
+}
+.download-btn {
+    background-color: #4CAF50 !important;
+    color: white !important;
+}
+.download-btn:hover {
+    background-color: #388E3C !important;
+}
+.copy-btn {
+    background-color: #2196F3 !important;
+    color: white !important;
+}
+.copy-btn:hover {
+    background-color: #1976D2 !important;
+}
+/* Base styles for Markdown components with better contrast */
+#output-a-markdown, #output-b-markdown {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    min-height: 200px;
+    background-color: transparent;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    color: white !important; /* Use white text for better visibility */
+}
+/* Code blocks already have good contrast with dark background and light text */
+#output-a-markdown pre, #output-b-markdown pre {
+    background-color: #2d2d2d; /* Dark background for code blocks */
+    color: #f0f0f0; /* Light text for dark background */
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+    font-family: 'Courier New', monospace;
+    line-height: 1.5;
+    margin: 10px 0;
+}
+/* Ensure all text elements in Markdown are visible on dark backgrounds */
+#output-a-markdown h1, #output-b-markdown h1,
+#output-a-markdown h2, #output-b-markdown h2,
+#output-a-markdown h3, #output-b-markdown h3,
+#output-a-markdown h4, #output-b-markdown h4,
+#output-a-markdown h5, #output-b-markdown h5,
+#output-a-markdown h6, #output-b-markdown h6,
+#output-a-markdown p, #output-b-markdown p,
+#output-a-markdown li, #output-b-markdown li,
+#output-a-markdown a, #output-b-markdown a {
+    color: white !important; /* Force white text for all content */
+}
+/* Make links distinguishable but still visible on dark backgrounds */
+#output-a-markdown a, #output-b-markdown a {
+    color: #66b3ff !important; /* Light blue for links */
+    text-decoration: underline;
+}
+/* Tables with better contrast */
+#output-a-markdown table, #output-b-markdown table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10px 0;
+    color: white !important; /* White text for table content */
+}
+#output-a-markdown th, #output-b-markdown th,
+#output-a-markdown td, #output-b-markdown td {
+    border: 1px solid #555;
+    padding: 8px;
+    text-align: left;
+    color: white !important; /* Ensure table cell text is visible */
+}
+#output-a-markdown th, #output-b-markdown th {
+    background-color: #444;
+    color: white !important;
+}
+/* Inline code with better contrast */
+#output-a-markdown code, #output-b-markdown code {
+    background-color: #3a3a3a; /* Dark background for inline code */
+    color: #f0f0f0 !important; /* Light text */
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+}
+.thumbs-button {
+    background-color: #4a86e8 !important;
+    color: white !important;
+    border-radius: 20px !important;
+    padding: 5px 15px !important;
+    transition: transform 0.2s !important;
+}
+.thumbs-button:hover {
+    background-color: #3a76d8 !important;
+    transform: scale(1.05) !important;
+}
+.full-width-button {
+    display: block !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+    margin-bottom: 10px !important;
+    height: 45px !important;
+    font-size: 16px !important;
+}
