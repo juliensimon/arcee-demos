@@ -1,0 +1,6 @@
+openvino
+openvino_genai
+optimum-intel[nncf,openvino]
+hf_xet
+openai
+requests
