@@ -1,0 +1,44 @@
+{
+  "models": {
+    "afm": {
+      "name": "AFM-4.5B-Preview",
+      "model_endpoint": "arcee-ai/AFM-4.5B-Preview",
+      "model_key": "afm"
+    },
+    "gemma": {
+      "name": "Gemma-3n-E4B-it",
+      "model_endpoint": "google/gemma-3n-E4B-it",
+      "model_key": "gemma"
+    },
+    "qwen": {
+      "name": "Qwen3-4B",
+      "model_endpoint": "juliensimon/Qwen/Qwen3-4B-e1f0120f",
+      "model_key": "qwen"
+    },
+    "llama3_8b": {
+      "name": "Llama-3.2-8B-Instruct",
+      "model_endpoint": "meta-llama/Llama-3.2-3B-Instruct-Turbo",
+      "model_key": "llama3_8b"
+    }
+  },
+  "evaluation": {
+    "evaluator_model": "deepseek-ai/DeepSeek-R1",
+    "max_tokens": 1024,
+    "temperature": 0.7,
+    "evaluation_max_tokens": 2048,
+    "evaluation_temperature": 0.3
+  },
+  "output": {
+    "results_dir": "radar_results",
+    "save_html": true,
+    "generate_pdf": false,
+    "max_workers": 10
+  },
+  "metrics": {
+    "accuracy": {"min": 1, "max": 5},
+    "completeness": {"min": 1, "max": 5},
+    "clarity": {"min": 1, "max": 5},
+    "depth": {"min": 1, "max": 5},
+    "overall": {"min": 1, "max": 5}
+  }
+} 
