@@ -1,8 +1,0 @@
-requests
-sagemaker
-pytest
-fastapi
-uvicorn
-cryptography
-httpx
-openai

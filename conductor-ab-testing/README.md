@@ -11,7 +11,10 @@ pinned: false
 
 # Conductor A-B Testing
 
-![Conductor A-B Testing](https://img.shields.io/badge/Conductor-A--B%20Testing-green)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Gradio](https://img.shields.io/badge/Gradio-5.23.3-orange)](https://gradio.app/)
+[![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Spaces-yellow)](https://huggingface.co/spaces)
+[![Arcee Conductor](https://img.shields.io/badge/Arcee-Conductor-purple)](https://conductor.arcee.ai)
 
 A powerful tool for comparing responses from different AI models through the Conductor API. This application allows you to conduct side-by-side comparisons, collect feedback, and analyze similarity metrics between model outputs.
 
@@ -120,14 +123,15 @@ Create a file named `test_prompts.json` in the project root with an array of pro
 ]
 ```
 
+## Resources
+
+- [Conductor API Documentation](https://conductor.arcee.ai/docs)
+- [Gradio Documentation](https://gradio.app/docs/)
+- [Hugging Face Spaces Documentation](https://huggingface.co/docs/hub/spaces-overview)
+- [Sentence Transformers Documentation](https://www.sbert.net/)
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- [Conductor API](https://conductor.arcee.ai) for providing access to various AI models
-- [Gradio](https://gradio.app/) for the web interface framework
-- [Sentence Transformers](https://www.sbert.net/) for semantic similarity analysis
 
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
