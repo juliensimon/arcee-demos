@@ -13,7 +13,7 @@ This repository contains various demonstrations and implementations showcasing A
 
 ## Repository Structure
 
-- [**anymcp**](./anymcp/): Minimal test scripts for Arcee's MCP (Multi-Cloud Platform)
+- [**anymcp**](./anymcp/): Minimal test scripts for Arcee AnyMCP
 - [**arcee-agent**](./arcee-agent/): Jupyter notebooks demonstrating Arcee agent capabilities
 - [**conductor-ab-testing**](./conductor-ab-testing/): A/B testing tool for comparing different model responses via Conductor API
 - [**conductor-rag**](./conductor-rag/): Retrieval-Augmented Generation demo using Arcee Conductor
