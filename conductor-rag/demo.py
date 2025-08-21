@@ -63,6 +63,9 @@ def load_config(config_path: str = "config.json") -> Dict[str, Any]:
             "paths": {
                 "vectorstore": "vectorstore",
                 "pdf": "pdf"
+            },
+            "retrieval": {
+                "num_chunks": 3
             }
         }
     except json.JSONDecodeError as e:
@@ -260,7 +263,8 @@ def create_qa_chain(llm: ChatOpenAI, vectorstore: Chroma) -> ConversationalRetri
         Configured ConversationalRetrievalChain for RAG
         
     Note:
-        Uses similarity search with k=3 documents for context
+        Uses similarity search with configurable number of documents for context
+        (controlled by config.retrieval.num_chunks)
     """
     # Custom prompt template for better responses
     prompt_template = """You are a helpful AI assistant that answers questions based on provided context and your knowledge.
@@ -284,11 +288,14 @@ Answer:"""
 
     prompt = ChatPromptTemplate.from_template(prompt_template)
 
+    # Get number of chunks from config
+    num_chunks = config.get("retrieval", {}).get("num_chunks", 3)
+    
     return ConversationalRetrievalChain.from_llm(
         llm=llm,
         retriever=vectorstore.as_retriever(
             search_type="similarity", 
-            search_kwargs={"k": 3}  # Retrieve top 3 most relevant documents
+            search_kwargs={"k": num_chunks}  # Retrieve top N most relevant documents
         ),
         return_source_documents=True,
         combine_docs_chain_kwargs={"prompt": prompt},

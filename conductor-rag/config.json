@@ -14,6 +14,12 @@
     "chunk_overlap": 128
   },
   
+  "retrieval": {
+    "_comment": "Document retrieval parameters for RAG queries",
+    "_description": "Controls how many document chunks are retrieved for each query",
+    "num_chunks": 3
+  },
+  
   "paths": {
     "_comment": "Directory paths for data storage and input",
     "vectorstore": "vectorstore",
@@ -67,6 +73,7 @@
     "file_organization": "Place PDFs in 'pdf/' and text files in 'text/' directories",
     "model_selection": "Choose embedding model based on your content type",
     "chunk_tuning": "Adjust chunk_size/overlap based on document length and complexity",
+    "retrieval_tuning": "Adjust num_chunks based on query complexity and desired context depth",
     "supported_extensions": "Text files: .txt .md .py .js .ts .java .cpp .c .go .rs .php .rb .swift .kt .scala .sh .bash .sql .html .css .json .xml .yaml .ini .vhd .v .sv .log"
   }
 }
