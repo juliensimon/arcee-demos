@@ -7,6 +7,8 @@
 
 AI-powered tools for enriching medical equipment metadata using the Arcee AFM-4.5B model. This project demonstrates how to enhance product catalogs with detailed descriptions, applications, and risk assessments.
 
+> *Note*: The original conductor demo is available in the `conductor-demo`branch.
+
 ## 🎯 Overview
 
 This project showcases automated metadata enrichment for medical equipment catalogs. Using the Arcee AFM-4.5B model, it transforms basic product listings into comprehensive, AI-generated descriptions that include:
@@ -189,4 +191,5 @@ This project is provided as a demonstration of AI-powered data enrichment capabi
 
 ---
 
-**Note**: This tool is designed for educational and demonstration purposes. Always verify AI-generated medical information and consult with healthcare professionals for clinical applications. 
+**Note**: This tool is designed for educational and demonstration purposes. Always verify AI-generated medical information and consult with healthcare professionals for clinical applications.
+
