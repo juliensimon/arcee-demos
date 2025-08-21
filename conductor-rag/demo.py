@@ -20,10 +20,12 @@ import json
 import os
 import time
 import warnings
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # Suppress warnings for cleaner output
-warnings.filterwarnings("ignore", category=UserWarning, module="pydantic._internal._fields")
+warnings.filterwarnings(
+    "ignore", category=UserWarning, module="pydantic._internal._fields"
+)
 
 # LangChain imports
 from langchain.chains import ConversationalRetrievalChain
@@ -32,21 +34,21 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 
-
 # ============================================================================
 # Configuration Management
 # ============================================================================
 
+
 def load_config(config_path: str = "config.json") -> Dict[str, Any]:
     """
     Load configuration from JSON file with fallback defaults.
-    
+
     Args:
         config_path: Path to the configuration file
-        
+
     Returns:
         Configuration dictionary
-        
+
     Note:
         Uses fallback configuration if file is not found.
     """
@@ -58,15 +60,10 @@ def load_config(config_path: str = "config.json") -> Dict[str, Any]:
         return {
             "embeddings": {
                 "model_name": "BAAI/bge-small-en-v1.5",
-                "normalize_embeddings": True
+                "normalize_embeddings": True,
             },
-            "paths": {
-                "vectorstore": "vectorstore",
-                "pdf": "pdf"
-            },
-            "retrieval": {
-                "num_chunks": 3
-            }
+            "paths": {"vectorstore": "vectorstore", "pdf": "pdf"},
+            "retrieval": {"num_chunks": 3},
         }
     except json.JSONDecodeError as e:
         print(f"Error: Invalid JSON in config file: {e}")
@@ -82,60 +79,64 @@ CHROMA_PATH = config["paths"]["vectorstore"]
 # Text Cleaning Utilities
 # ============================================================================
 
+
 def clean_response(text: str) -> str:
     """
     Clean model response by removing special tokens and formatting artifacts.
-    
+
     Args:
         text: Raw response text from the model
-        
+
     Returns:
         Cleaned response text with special tokens removed
-        
+
     Note:
         Removes common LLM special tokens like <|im_end|>, <|endoftext|>, etc.
     """
     if not text:
         return text
-    
+
     # Common special tokens to remove
     special_tokens = [
-        "<|im_end|>", "<|im_start|>", "<|endoftext|>",
-        "<|system|>", "<|user|>", "<|assistant|>", 
-        "<|end|>", "<|start|>"
+        "<|im_end|>",
+        "<|im_start|>",
+        "<|endoftext|>",
+        "<|system|>",
+        "<|user|>",
+        "<|assistant|>",
+        "<|end|>",
+        "<|start|>",
     ]
-    
+
     cleaned_text = text
     for token in special_tokens:
         cleaned_text = cleaned_text.replace(token, "")
-    
+
     # Clean up whitespace
     return cleaned_text.strip()
 
 
 # ============================================================================
-# Model Loading  
+# Model Loading
 # ============================================================================
-
-
 
 
 def create_llm(streaming: bool = False) -> ChatOpenAI:
     """
     Initialize local OpenAI compatible language model.
-    
+
     Args:
         streaming: Whether to enable response streaming
-        
+
     Returns:
         Configured ChatOpenAI instance for local model
-        
+
     Note:
         Assumes local model running on localhost:8080
     """
     return ChatOpenAI(
         model="local-model",  # Dummy name for local endpoints
-        base_url="http://localhost:8080/v1", 
+        base_url="http://localhost:8080/v1",
         api_key="dummy-key",  # Dummy key for local endpoints
         streaming=streaming,
         temperature=0.1,  # Low temperature for more deterministic responses
@@ -145,29 +146,31 @@ def create_llm(streaming: bool = False) -> ChatOpenAI:
 def create_embeddings() -> HuggingFaceEmbeddings:
     """
     Initialize embedding model for chat/inference (always uses CPU).
-    
+
     Returns:
         Configured HuggingFaceEmbeddings instance
-        
+
     Raises:
         RuntimeError: If model loading fails
-        
+
     Note:
         Always uses CPU for chat to ensure consistent performance and compatibility.
         For ingestion with auto-detection, use the create_embeddings function in ingest.py
     """
     if not config:
         raise RuntimeError("Configuration not loaded")
-    
+
     embeddings_config = config["embeddings"]
     model_name = embeddings_config["model_name"]
-    
+
     # Always use CPU for chat/inference
     print(f"🔄 Loading embedding model for chat (CPU): {model_name}")
     return HuggingFaceEmbeddings(
         model_name=model_name,
         model_kwargs={"device": "cpu", "trust_remote_code": True},
-        encode_kwargs={"normalize_embeddings": embeddings_config["normalize_embeddings"]},
+        encode_kwargs={
+            "normalize_embeddings": embeddings_config["normalize_embeddings"]
+        },
     )
 
 
@@ -175,19 +178,20 @@ def create_embeddings() -> HuggingFaceEmbeddings:
 # Vector Store Management
 # ============================================================================
 
+
 def load_vectorstore(embeddings: HuggingFaceEmbeddings) -> Chroma:
     """
     Load existing vector store for document querying.
-    
+
     Args:
         embeddings: Embedding model instance
-        
+
     Returns:
         Loaded Chroma vector store
-        
+
     Raises:
         FileNotFoundError: If vector store doesn't exist
-        
+
     Note:
         Vector store must be created first using ingest.py
     """
@@ -196,7 +200,7 @@ def load_vectorstore(embeddings: HuggingFaceEmbeddings) -> Chroma:
             f"📂 Vector store not found at '{CHROMA_PATH}'\n"
             "Please run 'python ingest.py' first to process your documents."
         )
-    
+
     print(f"📚 Loading vector database from: {CHROMA_PATH}")
     return Chroma(persist_directory=CHROMA_PATH, embedding_function=embeddings)
 
@@ -205,17 +209,20 @@ def load_vectorstore(embeddings: HuggingFaceEmbeddings) -> Chroma:
 # Question-Answering Chain Setup
 # ============================================================================
 
-def create_qa_chain(llm: ChatOpenAI, vectorstore: Chroma) -> ConversationalRetrievalChain:
+
+def create_qa_chain(
+    llm: ChatOpenAI, vectorstore: Chroma
+) -> ConversationalRetrievalChain:
     """
     Create the RAG question-answering chain.
-    
+
     Args:
         llm: Language model instance
         vectorstore: Vector store for document retrieval
-        
+
     Returns:
         Configured ConversationalRetrievalChain for RAG
-        
+
     Note:
         Uses similarity search with configurable number of documents for context
         (controlled by config.retrieval.num_chunks)
@@ -244,12 +251,12 @@ Answer:"""
 
     # Get number of chunks from config
     num_chunks = config.get("retrieval", {}).get("num_chunks", 3)
-    
+
     return ConversationalRetrievalChain.from_llm(
         llm=llm,
         retriever=vectorstore.as_retriever(
-            search_type="similarity", 
-            search_kwargs={"k": num_chunks}  # Retrieve top N most relevant documents
+            search_type="similarity",
+            search_kwargs={"k": num_chunks},  # Retrieve top N most relevant documents
         ),
         return_source_documents=True,
         combine_docs_chain_kwargs={"prompt": prompt},
@@ -262,78 +269,81 @@ Answer:"""
 # Response Generation and Display
 # ============================================================================
 
+
 def format_sources(source_documents: List) -> str:
     """
     Format source documents for display.
-    
+
     Args:
         source_documents: List of retrieved document objects
-        
+
     Returns:
         Formatted string with unique source citations
     """
     if not source_documents:
         return ""
-    
+
     sources = []
     seen_sources = set()
-    
+
     for doc in source_documents:
         source = doc.metadata.get("source", "Unknown")
         page = doc.metadata.get("page", "unknown")
         source_key = f"{source}:{page}"
-        
+
         if source_key not in seen_sources:
             # Clean up source path for display
             display_source = os.path.basename(source) if source != "Unknown" else source
             sources.append(f"  📄 {display_source}, page {page}")
             seen_sources.add(source_key)
-    
+
     return "\n\n📚 Sources:\n" + "\n".join(sources) if sources else ""
 
 
-def get_rag_response(qa_chain: ConversationalRetrievalChain, 
-                    query: str, 
-                    chat_history: List[Tuple[str, str]]) -> None:
+def get_rag_response(
+    qa_chain: ConversationalRetrievalChain,
+    query: str,
+    chat_history: List[Tuple[str, str]],
+) -> None:
     """
     Generate and display RAG-powered response with streaming effect.
-    
+
     Args:
         qa_chain: The QA chain instance
         query: User's question
         chat_history: Previous conversation history as list of (human, ai) tuples
-        
+
     Note:
         Displays response with character-by-character streaming for better UX
     """
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🤖 RAG Response")
-    print("="*60)
+    print("=" * 60)
 
     try:
         # Get response from QA chain
         result = qa_chain.invoke({"question": query, "chat_history": chat_history})
-        
+
         # Clean and display answer with streaming effect
         answer = result.get("answer", "❌ No answer found.")
         cleaned_answer = clean_response(answer)
-        
+
         print(f"\n💬 Question: {query}")
         print(f"\n✨ Answer: ", end="", flush=True)
-        
+
         # Simulate streaming for better user experience
         for char in cleaned_answer:
             print(char, end="", flush=True)
             time.sleep(0.003)  # Small delay for streaming effect
-        
+
         # Display sources
         sources = format_sources(result.get("source_documents", []))
         if sources:
             print(sources)
         else:
             print("\n\n📚 Sources: No specific sources found")
-            
-        print("\n" + "="*60)
+
+        print("\n" + "=" * 60)
 
     except (KeyboardInterrupt, ConnectionError) as e:
         print(f"\n❌ Error generating response: {str(e)}")
@@ -345,19 +355,20 @@ def get_rag_response(qa_chain: ConversationalRetrievalChain,
 # Main Demo Function
 # ============================================================================
 
+
 def main() -> None:
     """
     Main demo function for testing RAG functionality.
-    
+
     Demonstrates:
     - Loading vector store
-    - Creating QA chain  
+    - Creating QA chain
     - Generating RAG response
     - Displaying results with sources
     """
     print("🚀 Starting RAG Demo")
-    print("="*60)
-    
+    print("=" * 60)
+
     try:
         # Initialize components
         print("🔧 Initializing components...")
@@ -365,19 +376,19 @@ def main() -> None:
         embeddings = create_embeddings()
         vectorstore = load_vectorstore(embeddings)
         qa_chain = create_qa_chain(llm, vectorstore)
-        
+
         # Test query
         chat_history = []
         query = "What are the main topics covered in the documentation?"
-        
+
         print(f"✅ Initialization complete!")
-        
+
         # Generate response
         get_rag_response(qa_chain, query, chat_history)
-        
+
         print(f"\n🎉 Demo completed successfully!")
         print(f"💡 Try running 'python app.py' for the web interface")
-        
+
     except FileNotFoundError as e:
         print(f"❌ Error: {e}")
         print(f"\n🔧 To fix this:")

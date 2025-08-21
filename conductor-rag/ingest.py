@@ -24,27 +24,28 @@ import json
 import os
 import sys
 import warnings
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from tqdm import tqdm
 
 # Suppress warnings
-warnings.filterwarnings("ignore", category=UserWarning, module="pydantic._internal._fields")
+warnings.filterwarnings(
+    "ignore", category=UserWarning, module="pydantic._internal._fields"
+)
 warnings.filterwarnings("ignore", message=".*Defaulting to English.*")
 warnings.filterwarnings("ignore", category=UserWarning, module="unstructured")
 
 # Additional suppression for unstructured library language detection
 import logging
+
 logging.getLogger("unstructured").setLevel(logging.ERROR)
 
 # LangChain imports
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
-from langchain_community.document_loaders import (
-    DirectoryLoader, 
-    PyPDFLoader, 
-    TextLoader, 
-    UnstructuredMarkdownLoader
-)
+from langchain_community.document_loaders import (DirectoryLoader, PyPDFLoader,
+                                                  TextLoader,
+                                                  UnstructuredMarkdownLoader)
 from langchain_huggingface import HuggingFaceEmbeddings
 
 # Global configuration variables
@@ -58,16 +59,17 @@ TEXT_PATH: Optional[str] = None
 # Configuration Management
 # ============================================================================
 
+
 def load_config(config_path: str = "config.json") -> Dict[str, Any]:
     """
     Load configuration from JSON file.
-    
+
     Args:
         config_path: Path to the configuration file
-        
+
     Returns:
         Dictionary containing configuration settings
-        
+
     Raises:
         SystemExit: If configuration file is not found
     """
@@ -86,7 +88,7 @@ def load_config(config_path: str = "config.json") -> Dict[str, Any]:
 def initialize_paths(config_data: Dict[str, Any]) -> None:
     """
     Initialize global path variables from configuration.
-    
+
     Args:
         config_data: Configuration dictionary
     """
@@ -101,16 +103,17 @@ def initialize_paths(config_data: Dict[str, Any]) -> None:
 # Device Detection and Model Loading
 # ============================================================================
 
+
 def detect_optimal_device() -> str:
     """
     Detect the optimal device for model inference.
-    
+
     Returns:
         Device string: 'cuda', 'mps', or 'cpu'
     """
     try:
         import torch
-        
+
         if torch.cuda.is_available():
             device_name = torch.cuda.get_device_name()
             print(f"🚀 Auto-detected CUDA GPU: {device_name}")
@@ -121,7 +124,7 @@ def detect_optimal_device() -> str:
         else:
             print("💻 Auto-detected CPU (no GPU available)")
             return "cpu"
-            
+
     except ImportError:
         print("Warning: PyTorch not available, using CPU")
         return "cpu"
@@ -130,20 +133,20 @@ def detect_optimal_device() -> str:
 def create_embeddings() -> HuggingFaceEmbeddings:
     """
     Initialize the embedding model with automatic device detection and fallback.
-    
+
     Returns:
         Configured HuggingFaceEmbeddings instance
-        
+
     Raises:
         RuntimeError: If model loading fails on all devices
     """
     if not config:
         raise RuntimeError("Configuration not loaded. Call initialize_paths() first.")
-    
+
     embeddings_config = config["embeddings"]
     model_name = embeddings_config["model_name"]
     device = detect_optimal_device()
-    
+
     # Try MPS with fallback to CPU for Apple Silicon compatibility
     if device == "mps":
         try:
@@ -151,22 +154,30 @@ def create_embeddings() -> HuggingFaceEmbeddings:
             return HuggingFaceEmbeddings(
                 model_name=model_name,
                 model_kwargs={"device": "mps", "trust_remote_code": True},
-                encode_kwargs={"normalize_embeddings": embeddings_config["normalize_embeddings"]},
+                encode_kwargs={
+                    "normalize_embeddings": embeddings_config["normalize_embeddings"]
+                },
             )
         except (ValueError, NotImplementedError, RuntimeError) as e:
-            error_keywords = ["meta tensor", "meta device", "Cannot copy out of meta tensor"]
+            error_keywords = [
+                "meta tensor",
+                "meta device",
+                "Cannot copy out of meta tensor",
+            ]
             if any(keyword in str(e) for keyword in error_keywords):
                 print("⚠️  MPS failed with meta tensor error, falling back to CPU")
                 device = "cpu"
             else:
                 raise
-    
+
     # Use CUDA or CPU (or fallback from MPS)
     print(f"🔄 Loading model with {device.upper()}: {model_name}")
     return HuggingFaceEmbeddings(
         model_name=model_name,
         model_kwargs={"device": device, "trust_remote_code": True},
-        encode_kwargs={"normalize_embeddings": embeddings_config["normalize_embeddings"]},
+        encode_kwargs={
+            "normalize_embeddings": embeddings_config["normalize_embeddings"]
+        },
     )
 
 
@@ -174,16 +185,17 @@ def create_embeddings() -> HuggingFaceEmbeddings:
 # Text Processing
 # ============================================================================
 
+
 def get_text_splitter() -> RecursiveCharacterTextSplitter:
     """
     Create a text splitter with configurable settings.
-    
+
     Returns:
         Configured RecursiveCharacterTextSplitter instance
     """
     if not config:
         raise RuntimeError("Configuration not loaded")
-    
+
     text_config = config["text_splitting"]
     return RecursiveCharacterTextSplitter(
         chunk_size=text_config["chunk_size"],
@@ -196,10 +208,10 @@ def get_text_splitter() -> RecursiveCharacterTextSplitter:
 def filter_metadata(doc) -> bool:
     """
     Filter out unwanted document sections.
-    
+
     Args:
         doc: Document object with metadata
-        
+
     Returns:
         True if document should be kept, False if filtered out
     """
@@ -208,34 +220,37 @@ def filter_metadata(doc) -> bool:
     return not any(section_keyword in section for section_keyword in skip_sections)
 
 
-def process_documents(documents: List, text_splitter: RecursiveCharacterTextSplitter) -> List:
+def process_documents(
+    documents: List, text_splitter: RecursiveCharacterTextSplitter
+) -> List:
     """
     Process documents into filtered chunks.
-    
+
     Args:
         documents: List of loaded documents
         text_splitter: Text splitter instance
-        
+
     Returns:
         List of filtered document chunks
     """
     if not documents:
         return []
-    
+
     print(f"Processing {len(documents)} documents...")
-    
+
     # Split documents into chunks
     print("  Splitting documents into chunks...")
     chunks = text_splitter.split_documents(documents)
     print(f"    Created {len(chunks)} chunks")
-    
+
     # Filter chunks with progress bar
     print("  Filtering chunks...")
     filtered_chunks = [
-        chunk for chunk in tqdm(chunks, desc="Filtering", unit="chunk")
+        chunk
+        for chunk in tqdm(chunks, desc="Filtering", unit="chunk")
         if filter_metadata(chunk)
     ]
-    
+
     print(f"    Kept {len(filtered_chunks)} chunks after filtering")
     return filtered_chunks
 
@@ -244,10 +259,11 @@ def process_documents(documents: List, text_splitter: RecursiveCharacterTextSpli
 # File Discovery
 # ============================================================================
 
+
 def get_pdf_files() -> List[str]:
     """
     Get list of PDF files from the configured directory.
-    
+
     Returns:
         List of PDF file paths
     """
@@ -260,29 +276,29 @@ def get_pdf_files() -> List[str]:
 def get_text_files() -> List[str]:
     """
     Get list of text files from the configured directory.
-    
+
     Returns:
         List of text file paths
     """
     if not os.path.exists(TEXT_PATH):
         os.makedirs(TEXT_PATH, exist_ok=True)
         return []
-    
+
     text_extensions = config["file_types"]["text_extensions"]
     text_files = []
-    
+
     for ext in text_extensions:
         # Search for both lowercase and uppercase extensions
         text_files.extend(glob.glob(os.path.join(TEXT_PATH, f"*{ext}")))
         text_files.extend(glob.glob(os.path.join(TEXT_PATH, f"*{ext.upper()}")))
-    
+
     return text_files
 
 
 def get_all_files() -> List[str]:
     """
     Get list of all supported files (PDF and text).
-    
+
     Returns:
         Combined list of all file paths
     """
@@ -293,92 +309,87 @@ def get_all_files() -> List[str]:
 # Document Loading
 # ============================================================================
 
+
 def create_document_loaders() -> List:
     """
     Create document loaders for different file types.
-    
+
     Returns:
         List of configured document loaders
     """
     loaders = []
-    
+
     # PDF loader
     if os.path.exists(PDF_PATH):
-        pdf_loader = DirectoryLoader(
-            PDF_PATH, 
-            glob="**/*.pdf", 
-            loader_cls=PyPDFLoader
-        )
+        pdf_loader = DirectoryLoader(PDF_PATH, glob="**/*.pdf", loader_cls=PyPDFLoader)
         loaders.append(pdf_loader)
-    
+
     # Text file loaders
     if os.path.exists(TEXT_PATH):
         text_extensions = config["file_types"]["text_extensions"]
-        
+
         # Create glob patterns for all text extensions
         text_patterns = []
         for ext in text_extensions:
             text_patterns.extend([f"**/*{ext}", f"**/*{ext.upper()}"])
-        
+
         # General text loader
         text_loader = DirectoryLoader(
-            TEXT_PATH, 
-            glob=text_patterns, 
+            TEXT_PATH,
+            glob=text_patterns,
             loader_cls=TextLoader,
-            loader_kwargs={"encoding": "utf-8"}
+            loader_kwargs={"encoding": "utf-8"},
         )
         loaders.append(text_loader)
-        
+
         # Specialized markdown loader
         md_patterns = ["**/*.md", "**/*.markdown", "**/*.MD", "**/*.MARKDOWN"]
         md_loader = DirectoryLoader(
-            TEXT_PATH,
-            glob=md_patterns,
-            loader_cls=UnstructuredMarkdownLoader
+            TEXT_PATH, glob=md_patterns, loader_cls=UnstructuredMarkdownLoader
         )
         loaders.append(md_loader)
-    
+
     return loaders
 
 
 def load_documents_with_progress(loaders: List) -> List:
     """
     Load documents from all loaders with progress tracking.
-    
+
     Args:
         loaders: List of document loaders
-        
+
     Returns:
         List of loaded documents
     """
     all_documents = []
-    
+
     print("Loading documents...")
     for loader in loaders:
         loader_name = loader.__class__.__name__
-        loader_path = getattr(loader, 'path', 'unknown')
-        loader_glob = getattr(loader, 'glob', 'unknown')
-        
+        loader_path = getattr(loader, "path", "unknown")
+        loader_glob = getattr(loader, "glob", "unknown")
+
         # Create a descriptive name for the loader
-        if 'PDF' in loader_name:
+        if "PDF" in loader_name:
             description = f"PDFs from {loader_path}/"
-        elif 'Markdown' in loader_name:
+        elif "Markdown" in loader_name:
             description = f"Markdown files from {loader_path}/"
-        elif 'Text' in loader_name:
+        elif "Text" in loader_name:
             description = f"Text files from {loader_path}/"
         else:
             description = f"{loader_name} from {loader_path}/"
-        
+
         print(f"  Loading {description}")
         print(f"    Pattern: {loader_glob}")
-        
+
         try:
             documents = loader.load()
             all_documents.extend(documents)
             print(f"    ✅ Loaded {len(documents)} documents")
         except Exception as e:
             print(f"    ❌ Warning: Error loading: {e}")
-    
+
     return all_documents
 
 
@@ -386,16 +397,17 @@ def load_documents_with_progress(loaders: List) -> List:
 # Vector Store Management
 # ============================================================================
 
+
 def load_existing_vectorstore(embeddings: HuggingFaceEmbeddings) -> Chroma:
     """
     Load an existing vector store.
-    
+
     Args:
         embeddings: Embedding model instance
-        
+
     Returns:
         Loaded Chroma vector store
-        
+
     Raises:
         FileNotFoundError: If vector store doesn't exist
     """
@@ -404,19 +416,17 @@ def load_existing_vectorstore(embeddings: HuggingFaceEmbeddings) -> Chroma:
             f"Vector store not found at {CHROMA_PATH}. "
             "Please run 'python ingest.py' first to process your documents."
         )
-    
+
     print("📚 Loading existing Chroma database...")
     return Chroma(persist_directory=CHROMA_PATH, embedding_function=embeddings)
 
 
 def update_vectorstore_with_progress(
-    vectorstore: Chroma, 
-    chunks: List, 
-    batch_size: int = 10
+    vectorstore: Chroma, chunks: List, batch_size: int = 10
 ) -> None:
     """
     Add document chunks to vector store with progress tracking.
-    
+
     Args:
         vectorstore: Chroma vector store instance
         chunks: List of document chunks to add
@@ -424,36 +434,37 @@ def update_vectorstore_with_progress(
     """
     if not chunks:
         return
-    
+
     print("Adding documents to vector store...")
-    for i in tqdm(range(0, len(chunks), batch_size), desc="Adding chunks", unit="batch"):
-        batch = chunks[i:i + batch_size]
+    for i in tqdm(
+        range(0, len(chunks), batch_size), desc="Adding chunks", unit="batch"
+    ):
+        batch = chunks[i : i + batch_size]
         vectorstore.add_documents(batch)
 
 
 def create_vectorstore_with_progress(
-    embeddings: HuggingFaceEmbeddings, 
-    chunks: List
+    embeddings: HuggingFaceEmbeddings, chunks: List
 ) -> Chroma:
     """
     Create a new vector store with progress tracking for large datasets.
-    
+
     Args:
         embeddings: Embedding model instance
         chunks: List of document chunks
-        
+
     Returns:
         Created Chroma vector store
     """
     os.makedirs(CHROMA_PATH, exist_ok=True)
-    
+
     print("Creating vector embeddings and storing in database...")
-    
+
     # Use batched processing for large datasets
     if len(chunks) > 50:
         batch_size = 25
         print(f"Processing {len(chunks)} chunks in batches of {batch_size}...")
-        
+
         # Create initial vector store with first batch
         first_batch = chunks[:batch_size]
         vectorstore = Chroma.from_documents(
@@ -461,12 +472,12 @@ def create_vectorstore_with_progress(
             embedding=embeddings,
             persist_directory=CHROMA_PATH,
         )
-        
+
         # Add remaining batches with progress
         remaining_chunks = chunks[batch_size:]
         if remaining_chunks:
             update_vectorstore_with_progress(vectorstore, remaining_chunks, batch_size)
-        
+
         return vectorstore
     else:
         # Create normally for small datasets
@@ -480,43 +491,45 @@ def create_vectorstore_with_progress(
 def handle_existing_vectorstore(embeddings: HuggingFaceEmbeddings) -> Chroma:
     """
     Load existing vector store and update with new documents if needed.
-    
+
     Args:
         embeddings: Embedding model instance
-        
+
     Returns:
         Updated vector store
     """
     vectorstore = load_existing_vectorstore(embeddings)
-    
+
     # Check for new files
     all_files = get_all_files()
     if not all_files:
         print("No supported files found in directories.")
         print(f"Please add files to '{PDF_PATH}' (PDFs) or '{TEXT_PATH}' (text files)")
         sys.exit(1)
-    
+
     # Get already processed files
     collection = vectorstore.get()
     processed_files = {
-        meta.get("source") for meta in collection.get("metadatas", [])
+        meta.get("source")
+        for meta in collection.get("metadatas", [])
         if meta and meta.get("source")
     }
-    
+
     # Find new files
     new_files = [f for f in all_files if f not in processed_files]
-    
+
     if new_files:
         print(f"Found {len(new_files)} new files to process...")
-        
+
         # Load and process new documents
         loaders = create_document_loaders()
         all_documents = load_documents_with_progress(loaders)
         new_documents = [
-            doc for doc in all_documents 
+            doc
+            for doc in all_documents
             if doc.metadata.get("source") not in processed_files
         ]
-        
+
         # Process and add new chunks
         if new_documents:
             filtered_chunks = process_documents(new_documents, get_text_splitter())
@@ -525,22 +538,22 @@ def handle_existing_vectorstore(embeddings: HuggingFaceEmbeddings) -> Chroma:
                 print("Database updated successfully!")
     else:
         print("No new files to process.")
-    
+
     return vectorstore
 
 
 def create_new_vectorstore(embeddings: HuggingFaceEmbeddings) -> Chroma:
     """
     Create a new vector store from all available documents.
-    
+
     Args:
         embeddings: Embedding model instance
-        
+
     Returns:
         Created vector store
     """
     print("Creating new Chroma database...")
-    
+
     # Check for files
     all_files = get_all_files()
     if not all_files:
@@ -549,25 +562,25 @@ def create_new_vectorstore(embeddings: HuggingFaceEmbeddings) -> Chroma:
         print(f"  - '{PDF_PATH}' directory (for PDF files)")
         print(f"  - '{TEXT_PATH}' directory (for text files)")
         sys.exit(1)
-    
+
     print(f"Found {len(all_files)} files to process...")
     print("(This may take a while for large document collections)")
-    
+
     # Load and process all documents
     loaders = create_document_loaders()
     all_documents = load_documents_with_progress(loaders)
     filtered_chunks = process_documents(all_documents, get_text_splitter())
-    
+
     return create_vectorstore_with_progress(embeddings, filtered_chunks)
 
 
 def load_or_create_vectorstore(embeddings: HuggingFaceEmbeddings) -> Chroma:
     """
     Load existing vector store or create a new one.
-    
+
     Args:
         embeddings: Embedding model instance
-        
+
     Returns:
         Vector store instance
     """
@@ -580,10 +593,11 @@ def load_or_create_vectorstore(embeddings: HuggingFaceEmbeddings) -> Chroma:
 # Analysis and Statistics
 # ============================================================================
 
+
 def analyze_vectorstore(vectorstore: Chroma) -> None:
     """
     Analyze vector store and display statistics about indexed files.
-    
+
     Args:
         vectorstore: Chroma vector store to analyze
     """
@@ -591,40 +605,46 @@ def analyze_vectorstore(vectorstore: Chroma) -> None:
     if not collection.get("documents"):
         print("Vector store is empty.")
         return
-    
+
     # Collect file statistics
     file_stats = {}
     total_chunks = len(collection["documents"])
-    
+
     for metadata in collection.get("metadatas", []):
         if metadata and metadata.get("source"):
             source = metadata["source"]
             file_ext = os.path.splitext(source)[1].lower()
-            
+
             if file_ext not in file_stats:
                 file_stats[file_ext] = {"files": set(), "chunks": 0}
-            
+
             file_stats[file_ext]["files"].add(source)
             file_stats[file_ext]["chunks"] += 1
-    
+
     # Display statistics
     print(f"\n{'='*50}")
     print(f"Vector Store Statistics")
     print(f"{'='*50}")
     print(f"Total document chunks: {total_chunks:,}")
-    print(f"Unique files indexed: {sum(len(stats['files']) for stats in file_stats.values())}")
+    print(
+        f"Unique files indexed: {sum(len(stats['files']) for stats in file_stats.values())}"
+    )
     print(f"\nBreakdown by file type:")
-    
+
     # Sort by chunk count (descending)
-    sorted_stats = sorted(file_stats.items(), key=lambda x: x[1]["chunks"], reverse=True)
-    
+    sorted_stats = sorted(
+        file_stats.items(), key=lambda x: x[1]["chunks"], reverse=True
+    )
+
     for file_ext, stats in sorted_stats:
         num_files = len(stats["files"])
         num_chunks = stats["chunks"]
         percentage = (num_chunks / total_chunks) * 100
-        
-        print(f"  {file_ext:>8}: {num_files:>3} files, {num_chunks:>4} chunks ({percentage:>5.1f}%)")
-        
+
+        print(
+            f"  {file_ext:>8}: {num_files:>3} files, {num_chunks:>4} chunks ({percentage:>5.1f}%)"
+        )
+
         # Show sample files
         file_list = sorted(list(stats["files"]))
         for file_path in file_list[:3]:
@@ -638,10 +658,11 @@ def analyze_vectorstore(vectorstore: Chroma) -> None:
 # Command Line Interface
 # ============================================================================
 
+
 def create_argument_parser() -> argparse.ArgumentParser:
     """
     Create command line argument parser.
-    
+
     Returns:
         Configured ArgumentParser instance
     """
@@ -663,29 +684,29 @@ Supported file types:
   Config: .json, .xml, .yaml, .yml, .toml, .ini, .cfg, .conf
   Hardware: .vhd, .vhdl, .v, .sv, .svh
   Logs: .log
-        """
+        """,
     )
-    
+
     parser.add_argument(
         "action",
         nargs="?",
         default="ingest",
         choices=["ingest", "analyze"],
-        help="Action to perform (default: ingest)"
+        help="Action to perform (default: ingest)",
     )
-    
+
     parser.add_argument(
         "--config",
         default="config.json",
-        help="Path to configuration file (default: config.json)"
+        help="Path to configuration file (default: config.json)",
     )
-    
+
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Force re-ingestion of all files (ignores existing vector store)"
+        help="Force re-ingestion of all files (ignores existing vector store)",
     )
-    
+
     return parser
 
 
@@ -693,21 +714,22 @@ Supported file types:
 # Main Functions
 # ============================================================================
 
+
 def run_analysis(config_path: str) -> None:
     """
     Run analysis on existing vector store.
-    
+
     Args:
         config_path: Path to configuration file
-        """
+    """
     try:
         config_data = load_config(config_path)
         initialize_paths(config_data)
-        
+
         embeddings = create_embeddings()
         vectorstore = load_existing_vectorstore(embeddings)
         analyze_vectorstore(vectorstore)
-        
+
     except FileNotFoundError as e:
         print(f"❌ Error: {e}")
         print(f"\n🔧 To fix this:")
@@ -721,18 +743,18 @@ def run_analysis(config_path: str) -> None:
 def run_ingestion(config_path: str, force: bool = False) -> None:
     """
     Run the main ingestion process.
-    
+
     Args:
         config_path: Path to configuration file
         force: Whether to force re-ingestion of all files
     """
     print("🚀 Starting RAG document ingestion process...")
-    print("="*60)
-    
+    print("=" * 60)
+
     # Load configuration and initialize paths
     config_data = load_config(config_path)
     initialize_paths(config_data)
-    
+
     # Display configuration info
     text_extensions = config["file_types"]["text_extensions"]
     print(f"\nSupported file types:")
@@ -741,23 +763,25 @@ def run_ingestion(config_path: str, force: bool = False) -> None:
     print(f"    Extensions: {', '.join(text_extensions[:10])}")
     if len(text_extensions) > 10:
         print(f"    ... and {len(text_extensions) - 10} more")
-    
+
     # Handle force re-ingestion
     if force:
         print("\n⚠️  Force flag detected - this feature is not yet implemented")
         print("📝 TODO: Add logic to clear existing vector store")
-    
+
     try:
         # Initialize embeddings and process documents
         embeddings = create_embeddings()
         vectorstore = load_or_create_vectorstore(embeddings)
-        
+
         # Show final statistics
         analyze_vectorstore(vectorstore)
-        
+
         print(f"\nVector store location: {os.path.abspath(CHROMA_PATH)}")
-        print("\n✅ Ingestion complete! You can now run the chatbot with: python app.py")
-        
+        print(
+            "\n✅ Ingestion complete! You can now run the chatbot with: python app.py"
+        )
+
     except Exception as e:
         print(f"\n❌ Error during ingestion: {e}")
         sys.exit(1)
@@ -767,7 +791,7 @@ def main() -> None:
     """Main entry point for the application."""
     parser = create_argument_parser()
     args = parser.parse_args()
-    
+
     if args.action == "analyze":
         run_analysis(args.config)
     elif args.action == "ingest":
