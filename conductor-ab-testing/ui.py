@@ -1,21 +1,95 @@
 """
-UI module for A/B Testing Application for Conductor API Models
+UI module for A/B Testing Application
 
-This module contains the Gradio interface for the A/B testing application.
+This module contains the Gradio interface for the A/B testing application,
+providing a user-friendly web interface for comparing AI model responses
+with configurable generation parameters and comprehensive analysis tools.
+
+Features:
+- Side-by-side model comparison interface
+- Configurable generation parameters (temperature, top_p, max_tokens, etc.)
+- Real-time similarity metrics display
+- User feedback collection system
+- Random prompt loading for testing
+- Comprehensive data management tools
+
+Author: Arcee AI Team
+License: MIT
 """
 
 import os
 import json
 import logging
 import gradio as gr
-from typing import List, Any
+from typing import List, Any, Optional
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
-# Create the Gradio interface
-def create_ui(models_list: List[str] = None):
+def create_generation_params_dict(
+    temperature: float, 
+    top_p: float, 
+    max_tokens: int, 
+    frequency_penalty: float, 
+    presence_penalty: float
+) -> dict:
+    """
+    Create a dictionary of generation parameters from UI inputs.
+    
+    This function converts the individual UI parameter values into a structured
+    dictionary that can be passed to the model querying functions.
+    
+    Args:
+        temperature (float): Temperature parameter for controlling randomness.
+        top_p (float): Top P parameter for nucleus sampling.
+        max_tokens (int): Maximum number of tokens to generate.
+        frequency_penalty (float): Penalty for frequent token repetition.
+        presence_penalty (float): Penalty for any token repetition.
+        
+    Returns:
+        dict: Dictionary containing all generation parameters with proper types.
+    
+    Note:
+        All parameters are explicitly converted to their expected types to ensure
+        compatibility with the model API calls.
+    """
+    return {
+        "temperature": float(temperature),
+        "top_p": float(top_p),
+        "max_tokens": int(max_tokens),
+        "frequency_penalty": float(frequency_penalty),
+        "presence_penalty": float(presence_penalty),
+    }
+
+
+def create_ui(models_list: Optional[List[str]] = None) -> gr.Blocks:
+    """
+    Create the Gradio interface for the A/B testing application.
+    
+    This function builds a comprehensive web interface that allows users to:
+    - Select and compare two different AI models
+    - Configure generation parameters for fair comparison
+    - View detailed metrics and similarity analysis
+    - Collect and manage user feedback
+    - Load random prompts for testing
+    
+    Args:
+        models_list (Optional[List[str]]): List of available model names.
+            If None, models will be fetched automatically from the app module.
+    
+    Returns:
+        gr.Blocks: Configured Gradio interface ready for launch.
+    
+    Note:
+        The interface includes all necessary event handlers and provides
+        a complete workflow for A/B testing AI models with comprehensive
+        analysis and feedback collection capabilities.
+    """
     # Import functions from app.py here to avoid circular imports
     from app import (
         ab_test,
@@ -23,7 +97,7 @@ def create_ui(models_list: List[str] = None):
         display_feedback_data,
         reset_feedback_file,
         copy_to_clipboard,
-        clear_outputs,
+        clear_outputs_with_params,
         load_random_prompt,
         get_available_models,
     )
@@ -37,7 +111,7 @@ def create_ui(models_list: List[str] = None):
 
     # Only log if we had to refresh the models (not using the passed list)
     if models_list is None:
-        logging.info(f"Available models (refreshed): {available_models}")
+        logger.info(f"Available models (refreshed): {len(available_models)} models")
 
     # Create the Gradio interface
     demo = gr.Blocks(
@@ -48,7 +122,10 @@ def create_ui(models_list: List[str] = None):
     with demo:
         # Application title and description
         gr.Markdown("# A/B Testing - Arcee Conductor Models")
-        gr.Markdown("Select two models and enter a query (or pick a random prompt) to compare their responses.")
+        gr.Markdown(
+            "Select two models and enter a query (or pick a random prompt) to compare their responses. "
+            "Both models will use identical generation parameters for fair comparison."
+        )
 
         # Model selection dropdowns
         with gr.Row():
@@ -69,14 +146,62 @@ def create_ui(models_list: List[str] = None):
 
         # Query input box
         query_input = gr.Textbox(
-            lines=5, placeholder="Enter your query here...", label="Query"
+            lines=5, 
+            placeholder="Enter your query here...", 
+            label="Query"
         )
+
+        # Generation Parameters Section
+        with gr.Accordion("🔧 Generation Parameters", open=False):
+            with gr.Row():
+                with gr.Column():
+                    temperature = gr.Slider(
+                        minimum=0.0,
+                        maximum=2.0,
+                        value=0.7,
+                        step=0.1,
+                        label="Temperature",
+                        info="Controls randomness (0.0 = deterministic, 2.0 = very random)"
+                    )
+                    top_p = gr.Slider(
+                        minimum=0.0,
+                        maximum=1.0,
+                        value=0.9,
+                        step=0.1,
+                        label="Top P",
+                        info="Controls diversity via nucleus sampling"
+                    )
+                with gr.Column():
+                    max_tokens = gr.Slider(
+                        minimum=1,
+                        maximum=4000,
+                        value=1000,
+                        step=1,
+                        label="Max Tokens",
+                        info="Maximum number of tokens to generate"
+                    )
+                    frequency_penalty = gr.Slider(
+                        minimum=-2.0,
+                        maximum=2.0,
+                        value=0.0,
+                        step=0.1,
+                        label="Frequency Penalty",
+                        info="Reduces repetition of frequent tokens"
+                    )
+                    presence_penalty = gr.Slider(
+                        minimum=-2.0,
+                        maximum=2.0,
+                        value=0.0,
+                        step=0.1,
+                        label="Presence Penalty",
+                        info="Reduces repetition of any token"
+                    )
 
         # Random prompt button with full width
         random_prompt_btn = gr.Button(
             "🎲 Random Prompt",
             variant="secondary",
-            elem_classes=["full-width-button"],  # Add a custom class for styling
+            elem_classes=["full-width-button"],
         )
 
         # Submit and clear buttons
@@ -176,8 +301,19 @@ def create_ui(models_list: List[str] = None):
         # Set up event handlers
         # Submit button handler
         submit_btn.click(
-            fn=ab_test,
-            inputs=[model_a_dropdown, model_b_dropdown, query_input],
+            fn=lambda model_a, model_b, query, temp, top_p, max_tok, freq_pen, pres_pen: ab_test(
+                model_a, model_b, query, create_generation_params_dict(temp, top_p, max_tok, freq_pen, pres_pen)
+            ),
+            inputs=[
+                model_a_dropdown, 
+                model_b_dropdown, 
+                query_input,
+                temperature,
+                top_p,
+                max_tokens,
+                frequency_penalty,
+                presence_penalty
+            ],
             outputs=[
                 output_a,
                 output_b,
@@ -190,7 +326,7 @@ def create_ui(models_list: List[str] = None):
 
         # Clear button handler
         clear_btn.click(
-            fn=clear_outputs,
+            fn=clear_outputs_with_params,
             inputs=[],
             outputs=[
                 output_a,
@@ -206,7 +342,19 @@ def create_ui(models_list: List[str] = None):
                 feedback_status_b,
                 feedback_data_display,
                 copy_status,
+                temperature,
+                top_p,
+                max_tokens,
+                frequency_penalty,
+                presence_penalty,
             ],
+        )
+
+        # Random prompt button handler
+        random_prompt_btn.click(
+            fn=load_random_prompt,
+            inputs=[],
+            outputs=[query_input],
         )
 
         # Model A feedback button handler
@@ -237,25 +385,16 @@ def create_ui(models_list: List[str] = None):
                
                 // Copy to clipboard using a more reliable approach
                 try {
-                    // Create a temporary textarea element
-                    const textarea = document.createElement('textarea');
-                    textarea.value = feedback_data;
-                    textarea.setAttribute('readonly', '');
-                    textarea.style.position = 'absolute';
-                    textarea.style.left = '-9999px';
-                    document.body.appendChild(textarea);
-                    
-                    // Select and copy the text
-                    textarea.select();
+                    const textArea = document.createElement('textarea');
+                    textArea.value = feedback_data;
+                    document.body.appendChild(textArea);
+                    textArea.select();
                     document.execCommand('copy');
-                    
-                    // Remove the temporary element
-                    document.body.removeChild(textarea);
-                    
-                    return "✅ Feedback data copied to clipboard!";
+                    document.body.removeChild(textArea);
+                    return "Feedback data copied to clipboard!";
                 } catch (err) {
                     console.error('Failed to copy: ', err);
-                    return "❌ Failed to copy to clipboard. Please try again.";
+                    return "Failed to copy to clipboard.";
                 }
             }
             """,
@@ -263,20 +402,10 @@ def create_ui(models_list: List[str] = None):
 
         # Reset feedback file button handler
         reset_btn.click(
-            fn=reset_feedback_file,  # Call the reset_feedback_file function
+            fn=reset_feedback_file,
             inputs=[],
-            outputs=[file_op_status],  # Show the reset status message
-        ).then(
-            fn=lambda: ("", "", ""),  # Clear feedback status messages and copy status
-            inputs=[],
-            outputs=[feedback_status_a, feedback_status_b, copy_status],
-        ).then(
-            fn=display_feedback_data,  # Update the feedback display
-            inputs=[],
-            outputs=[feedback_data_display],
-        )
+            outputs=[file_op_status],
+        ).then(fn=display_feedback_data, inputs=[], outputs=[feedback_data_display])
 
-        # Random prompt button handler
-        random_prompt_btn.click(fn=load_random_prompt, inputs=[], outputs=[query_input])
-
+    logger.info("Gradio interface created successfully")
     return demo

@@ -1,39 +1,64 @@
----
-title: Conductor A-B Testing
-emoji: 🏆
-colorFrom: green
-colorTo: blue
-sdk: gradio
-sdk_version: 5.23.3
-app_file: app.py
-pinned: false
----
 
-# Conductor A-B Testing
+# A-B Testing with Similarity Metrics
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Gradio](https://img.shields.io/badge/Gradio-5.23.3-orange)](https://gradio.app/)
 [![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Spaces-yellow)](https://huggingface.co/spaces)
-[![Arcee Conductor](https://img.shields.io/badge/Arcee-Conductor-purple)](https://conductor.arcee.ai)
 
-A powerful tool for comparing responses from different AI models through the Conductor API. This application allows you to conduct side-by-side comparisons, collect feedback, and analyze similarity metrics between model outputs.
+A powerful tool for comparing responses from different AI models through Arcee and Together AI APIs. This application allows you to perform side-by-side comparisons, collect feedback, and analyze similarity metrics between model outputs.
 
 ## Features
 
-- **Side-by-Side Model Comparison**: Compare responses from any two models available through the Conductor API
+- **Side-by-Side Model Comparison**: Compare responses from any two models available through the Arcee API or Together.ai
+- **Configurable Generation Parameters**: Control temperature, top_p, max_tokens, frequency_penalty, and presence_penalty for both models
 - **Detailed Metrics**: View token usage, response time, and multiple similarity metrics
 - **Semantic Analysis**: Analyze the semantic similarity between model responses
 - **Feedback Collection**: Save your preferences between model responses
 - **Data Management**: View, copy, and reset collected feedback data
 - **Random Prompts**: Load random test prompts to quickly evaluate models
 
+## Available Models
+
+### Arcee API Models
+The application automatically discovers and lists all available models from the Arcee API, including:
+- virtuoso-large
+- virtuoso-medium
+- coder
+- spotlight
+- caller-large
+- blitz
+- And many more...
+
+### Together.ai Models
+- **arcee-ai/AFM-4.5B**: A 4.5B parameter model optimized for various tasks
+
+To use Together.ai models, you need to set the `TOGETHER_API_KEY` environment variable.
+
+## Generation Parameters
+
+The application allows you to configure the following generation parameters for both models:
+
+- **Temperature** (0.0 - 2.0): Controls randomness in the response. Lower values make responses more deterministic, higher values increase creativity.
+- **Top P** (0.0 - 1.0): Controls diversity via nucleus sampling. Lower values focus on more likely tokens.
+- **Max Tokens** (1 - 4000): Maximum number of tokens to generate in the response.
+- **Frequency Penalty** (-2.0 - 2.0): Reduces repetition of frequent tokens. Positive values discourage repetition.
+- **Presence Penalty** (-2.0 - 2.0): Reduces repetition of any token. Positive values encourage the model to talk about new topics.
+
+Both models use exactly the same parameters to ensure fair comparison. Default values are:
+- Temperature: 0.7
+- Top P: 0.9
+- Max Tokens: 1000
+- Frequency Penalty: 0.0
+- Presence Penalty: 0.0
+
 ## Getting Started
 
 ### Prerequisites
 
-- Conductor API key - see https://conductor.arcee.ai
+- Arcee API key - see https://conductor.arcee.ai
+- Together.ai API key (optional, for AFM-4.5B model) - see https://together.ai
 - Python 3.10+
-- Required packages: gradio, openai, python-dotenv, sentence-transformers
+- Required packages: gradio, openai, together, sentence-transformers
 
 ### Installation
 
@@ -48,9 +73,10 @@ A powerful tool for comparing responses from different AI models through the Con
    pip install -r requirements.txt
    ```
 
-3. Create a `.env` file in the project root and add your Conductor API key:
+3. Create a `.env` file in the project root and add your API keys:
    ```
-   CONDUCTOR_API_KEY=your_api_key_here
+   CONDUCTOR_API_KEY=your_conductor_api_key_here
+   TOGETHER_API_KEY=your_together_api_key_here
    ```
 
 4. Run the application:
@@ -83,7 +109,7 @@ You can easily deploy this application as a Hugging Face Space by following thes
    - Update the Space configuration in the README.md file:
      ```
      ---
-     title: Conductor A-B Testing
+     title: Arcee AI A-B Testing
      emoji: 🏆
      colorFrom: green
      colorTo: blue
@@ -94,10 +120,11 @@ You can easily deploy this application as a Hugging Face Space by following thes
      ---
      ```
 
-4. Add your Conductor API key as a secret:
+4. Add your API keys as secrets:
    - Go to your Space settings
    - Navigate to the "Repository secrets" section
-   - Add a new secret with the name `CONDUCTOR_API_KEY` and your API key as the value
+   - Add a new secret with the name `CONDUCTOR_API_KEY` and your Conductor API key as the value
+   - Add another secret with the name `TOGETHER_API_KEY` and your Together.ai API key as the value (optional)
 
 5. Deploy your Space:
    - Commit and push your changes to GitHub
@@ -125,7 +152,6 @@ Create a file named `test_prompts.json` in the project root with an array of pro
 
 ## Resources
 
-- [Conductor API Documentation](https://conductor.arcee.ai/docs)
 - [Gradio Documentation](https://gradio.app/docs/)
 - [Hugging Face Spaces Documentation](https://huggingface.co/docs/hub/spaces-overview)
 - [Sentence Transformers Documentation](https://www.sbert.net/)
