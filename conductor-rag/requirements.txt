@@ -1,11 +1,41 @@
-langchain
-langchain-openai
-langchain-huggingface
-langchain-chroma
-sentence-transformers
-torch
-transformers
-langchain-community
-chromadb
-pypdf
-gradio
+# RAG Document Processing System Requirements
+# ============================================
+
+# Core LangChain Framework
+langchain>=0.1.0
+langchain-openai>=0.1.0
+langchain-community>=0.2.0
+langchain-chroma>=0.1.0
+langchain-huggingface>=0.1.0
+
+# Machine Learning & NLP
+torch>=2.0.0
+transformers>=4.35.0
+sentence-transformers>=2.2.0
+accelerate>=0.20.0
+optimum>=1.12.0
+
+# Vector Database
+chromadb>=0.4.0
+
+# Document Processing
+pypdf>=3.0.0
+unstructured>=0.10.0
+markdown>=3.4.0
+
+# Web Interface
+gradio>=4.0.0
+
+# Utilities
+tqdm>=4.65.0
+huggingface_hub[xet]>=0.16.0
+
+# Optional: GPU acceleration (uncomment if using NVIDIA GPUs)
+# torch-audio  # For audio processing if needed
+# torchvision  # For image processing if needed
+
+# Development Dependencies (uncomment for development)
+# pytest>=7.0.0
+# black>=23.0.0
+# flake8>=6.0.0
+# mypy>=1.0.0

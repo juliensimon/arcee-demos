@@ -1,218 +1,343 @@
+#!/usr/bin/env python3
 """
-Gradio web application for RAG-powered document chat using Arcee Conductor.
+RAG Document Chat Web Application
 
-This module provides a user interface for querying documents using either
-Retrieval-Augmented Generation (RAG) or vanilla LLM responses.
+A Gradio-based web interface for querying documents using Retrieval-Augmented Generation.
+Provides an intuitive chat interface with source citations and context display.
+
+Features:
+- Real-time document search and question answering
+- Source citation with page references  
+- Retrieved context display for transparency
+- Example queries to get users started
+- Responsive web interface
+
+Usage:
+    python app.py
+    
+Then open your browser to the displayed URL (typically http://localhost:7860)
+
+Requirements:
+- Documents must be processed first using: python ingest.py
+- Local OpenAI compatible model running on localhost:8080
 """
 
-# Import necessary libraries
 import gradio as gr
-from demo import create_embeddings  # Function to create text embeddings
-from demo import create_llm  # Function to initialize the language model
-from demo import create_qa_chain  # Function to create question-answering chain
+from typing import Tuple, List, Optional
+
+# Import core RAG functionality
 from demo import (
-    load_or_create_vectorstore,  # Function to load or create vector database
+    create_embeddings, 
+    create_llm, 
+    create_qa_chain, 
+    clean_response, 
+    load_vectorstore,
+    format_sources
 )
 
 
-def initialize_chain():
-    """Initialize the RAG (Retrieval-Augmented Generation) chain and return it.
+# ============================================================================
+# Application Configuration
+# ============================================================================
 
-    This function sets up all components needed for document-based Q&A:
-    1. Language model for generating responses
-    2. Embeddings model for converting text to vectors
-    3. Vector store for document retrieval
-    4. QA chain that combines retrieval with generation
+# Gradio interface configuration
+APP_TITLE = "📚 RAG Document & Code Chat"
+APP_DESCRIPTION = """
+Ask questions about your documents and code. The system searches through 
+your ingested content and provides detailed answers with source citations.
+
+**💡 How it works:**
+1. Your question is processed and converted to embeddings
+2. Relevant document sections are retrieved from the vector database
+3. A language model generates an answer using the retrieved context
+4. Sources are cited so you can verify the information
+"""
+
+
+
+
+# ============================================================================
+# Core Application Logic
+# ============================================================================
+
+def initialize_rag_system():
     """
-    model = create_llm()  # Initialize the language model
-    embeddings = create_embeddings()  # Initialize the embeddings model
-    vectorstore = load_or_create_vectorstore(
-        embeddings
-    )  # Load or create the vector database
-    return create_qa_chain(model, vectorstore)  # Create and return the QA chain
+    Initialize the RAG system components.
+    
+    Returns:
+        Configured QA chain for document retrieval and generation
+        
+    Raises:
+        FileNotFoundError: If vector store hasn't been created
+        Exception: If model loading fails
+    """
+    try:
+        print("🔧 Initializing RAG system...")
+        
+        # Load models and vector store
+        llm = create_llm()
+        embeddings = create_embeddings() 
+        vectorstore = load_vectorstore(embeddings)
+        qa_chain = create_qa_chain(llm, vectorstore)
+        
+        print("✅ RAG system initialized successfully")
+        return qa_chain
+        
+    except FileNotFoundError as e:
+        error_msg = f"""
+❌ Vector store not found: {e}
+
+🔧 To fix this:
+1. Add your files to the appropriate directories:
+   - PDFs → 'pdf/' directory
+   - Text/Code files → 'text/' directory
+2. Run the ingestion script: python ingest.py
+3. Wait for processing to complete
+4. Restart this application: python app.py
+"""
+        print(error_msg)
+        raise
+        
+    except Exception as e:
+        error_msg = f"❌ Failed to initialize RAG system: {e}"
+        print(error_msg)
+        raise
 
 
-def chat_response(message, history, query_type):
-    """Process chat messages and return responses using either RAG or vanilla LLM.
-
-    This function handles two modes of operation:
-    1. RAG mode: Retrieves relevant document chunks and generates answers based on them
-    2. Vanilla LLM mode: Directly queries the LLM without document context
+def generate_response(message: str, chat_history: List[List[str]]) -> Tuple[str, List[List[str]], str]:
+    """
+    Generate RAG-powered response to user query.
 
     Args:
-        message (str): The user's input message/question
-        history (list): List of previous message-response pairs from the chat
-        query_type (str): Either "RAG" or "Vanilla LLM" to determine response method
+        message: User's question
+        chat_history: Previous conversation as list of [user_msg, bot_msg] pairs
 
     Returns:
-        str: The formatted response text including sources for RAG queries
+        Tuple of (empty_string, updated_history, context)
+        - empty_string: Clears the input box
+        - updated_history: Chat history with new exchange
+        - context: Retrieved document context for display
     """
-    # Convert Gradio history format to the format expected by our chain
-    chat_history = list(history) if history else []
+    if not message.strip():
+        return "", chat_history, ""
+    
+    try:
+        # Convert Gradio history format to LangChain format
+        langchain_history = []
+        for exchange in chat_history:
+            if len(exchange) == 2:
+                user_msg, bot_msg = str(exchange[0]), str(exchange[1])
+                langchain_history.append((user_msg, bot_msg))
+        
+        # Generate RAG response
+        result = qa_chain.invoke({
+            "question": message, 
+            "chat_history": langchain_history
+        })
+        
+        # Clean response and add sources
+        response_text = clean_response(result["answer"])
+        sources = format_sources(result.get("source_documents", []))
+        
+        if sources:
+            full_response = response_text + sources
+        else:
+            full_response = response_text + "\n\n📚 Sources: No specific sources found"
+        
+        # Update chat history
+        updated_history = chat_history + [[message, full_response]]
+        
+        # Extract context for display
+        context = extract_context(result.get("source_documents", []))
+        
+        return "", updated_history, context
+        
+    except Exception as e:
+        error_response = f"❌ Error generating response: {str(e)}"
+        updated_history = chat_history + [[message, error_response]]
+        return "", updated_history, "Error: Could not retrieve context"
 
-    if query_type == "RAG":
-        # Use RAG to get answer with context from documents
-        result = qa_chain.invoke({"question": message, "chat_history": chat_history})
-        response_text = result["answer"]
 
-        # Add source citations if available
-        if result.get("source_documents"):
-            # Track seen sources to avoid duplicates
-            sources = []
-            seen_sources = set()
-
-            # Deduplicate sources while preserving order
-            # This ensures we don't list the same source multiple times
-            for doc in result["source_documents"]:
-                source = doc.metadata.get("source", "Unknown")  # Get document source
-                page = doc.metadata.get("page", "unknown")  # Get page number
-                source_key = f"{source}:{page}"  # Create unique key for deduplication
-
-                # Only add source if we haven't seen it before
-                if source_key not in seen_sources:
-                    sources.append(f"- {source}, page {page}")
-                    seen_sources.add(source_key)
-
-            # Append sources to response if any were found
-            if sources:
-                response_text += "\n\nSources:\n" + "\n".join(sources)
-    else:
-        # Use vanilla LLM for direct responses without document context
-        # This bypasses the retrieval step and directly queries the language model
-        result = llm.invoke(message)
-        response_text = result.content
-
-    return response_text
+def extract_context(source_documents: List) -> str:
+    """
+    Extract and format context from retrieved documents.
+    
+    Args:
+        source_documents: List of retrieved document objects
+        
+    Returns:
+        Formatted context string for display
+    """
+    if not source_documents:
+        return "No context retrieved for this query."
+    
+    context_parts = []
+    for i, doc in enumerate(source_documents[:3], 1):  # Show top 3 sources
+        source = doc.metadata.get("source", "Unknown")
+        page = doc.metadata.get("page", "unknown") 
+        content = doc.page_content[:500] + "..." if len(doc.page_content) > 500 else doc.page_content
+        
+        context_parts.append(f"""
+📄 **Source {i}:** {source} (page {page})
+📝 **Content:** {content}
+""")
+    
+    return "\n".join(context_parts)
 
 
-# Initialize components once at startup for better performance
-# This avoids recreating these expensive objects on each request
-llm = create_llm()  # Global LLM instance
-qa_chain = initialize_chain()  # Global QA chain instance
-
-# Create the Gradio interface
-with gr.Blocks() as demo:
-    # Header and description section
-    gr.Markdown("# RAG-Powered Document Chat with Arcee Conductor")
-    gr.Markdown(
-        "Ask questions about your documents. The system will provide answers "
-        "based on the content of your PDFs."
-    )
-
-    # RAG toggle switch - allows switching between RAG and vanilla LLM modes
-    rag_enabled = gr.Checkbox(
-        value=True,  # Default to RAG mode
-        label="Enable RAG",
-        info="Toggle between RAG-powered document search or vanilla LLM responses",
-    )
-
-    # Chat interface components
-    chatbot = gr.Chatbot()  # Main chat interface showing conversation history
-    context_box = gr.Textbox(
-        label="Retrieved Context",  # Shows the raw context retrieved from documents
-        interactive=False,  # User can't edit this
-        visible=True,  # Initially visible when RAG is enabled
-        lines=5,  # Height of the text box
-    )
-
-    # Input area for user queries
-    with gr.Row():
-        msg = gr.Textbox(label="Query", scale=8)  # Text input for user questions
-        with gr.Column(scale=1):
-            submit = gr.Button("Submit")  # Submit button
-            clear = gr.Button("Clear")  # Clear conversation button
-
-    def respond(message, chat_history, is_rag_enabled):
-        """Generate response to user message and update the UI.
-
-        This function:
-        1. Processes the user's message
-        2. Gets a response using the appropriate method (RAG or vanilla)
-        3. Updates the chat history
-        4. Retrieves context for display (in RAG mode)
-
-        Args:
-            message (str): User input message
-            chat_history (list): Previous conversation history
-            is_rag_enabled (bool): Whether to use RAG or vanilla LLM
+def clear_conversation() -> Tuple[List, str]:
+    """
+    Clear the chat history and context display.
 
         Returns:
-            tuple: (cleared message, updated history, context, RAG state)
-                - cleared message: Empty string to clear the input box
-                - updated history: New chat history with the latest exchange
-                - context: Retrieved document context (for RAG mode)
-                - RAG state: Current state of the RAG toggle
+        Tuple of (empty_history, empty_context)
+    """
+    return [], ""
+
+
+# ============================================================================
+# Initialize Application
+# ============================================================================
+
+try:
+    qa_chain = initialize_rag_system()
+except Exception:
+    # Exit gracefully if initialization fails
+    print("❌ Application startup failed. Please check the error messages above.")
+    exit(1)
+
+
+# ============================================================================
+# Gradio Interface Definition
+# ============================================================================
+
+def create_interface():
+    """Create and configure the Gradio interface."""
+    
+    with gr.Blocks(
+        title="RAG Document Chat",
+        theme=gr.themes.Soft(),
+        css="""
+        .gradio-container {
+            max-width: 100% !important;
+            width: 100% !important;
+        }
+        .chat-container {
+            height: 500px;
+        }
         """
-        # Return early if message is empty
-        if not message:
-            return "", chat_history, "", is_rag_enabled
+    ) as interface:
+        
+        # Header section
+        gr.Markdown(f"# {APP_TITLE}")
+        gr.Markdown(APP_DESCRIPTION)
+        
+        # Main interface layout
+        with gr.Row():
+            # Left column: Chat interface
+            with gr.Column(scale=2):
+                chatbot = gr.Chatbot(
+                    label="💬 Conversation",
+                    height=500,
+                    show_label=True,
+                    container=True,
+                    bubble_full_width=False,
+                    show_copy_button=True
+                )
+                
+                # Input area
+                with gr.Row():
+                    msg_input = gr.Textbox(
+                        label="💬 Your Question",
+                        placeholder="Ask a question about your documents...",
+                        scale=4,
+                        lines=1,
+                        max_lines=3
+                    )
+                    send_btn = gr.Button(
+                        "Send 🚀", 
+                        variant="primary", 
+                        scale=1,
+                        size="lg"
+                    )
+                
+                # Control buttons
+                with gr.Row():
+                    clear_btn = gr.Button("🗑️ Clear Chat", variant="secondary")
+                    
+            # Right column: Context display
+            with gr.Column(scale=1):
+                context_display = gr.Textbox(
+                    label="📄 Retrieved Context",
+                    placeholder="Retrieved document context will appear here...",
+                    interactive=False,
+                    lines=20,
+                    max_lines=25,
+                    show_label=True
+                )
+        
 
-        # Get response using appropriate method based on RAG toggle
-        query_type = "RAG" if is_rag_enabled else "Vanilla LLM"
-        bot_message = chat_response(message, chat_history, query_type)
 
-        # Update chat history with new exchange
-        # Create a new list to avoid modifying the original
-        new_history = list(chat_history)
-        new_history.append((message, bot_message))
-
-        # Get context for display (only for RAG mode)
-        # This shows the raw document chunks that were retrieved
-        context = ""
-        if is_rag_enabled and qa_chain.retriever:
-            docs = qa_chain.retriever.get_relevant_documents(message)
-            context = "\n\n".join(doc.page_content for doc in docs)
-
-        # Return values to update the UI
-        return "", new_history, context, is_rag_enabled
-
-    def update_context_visibility(is_rag_enabled):
-        """Show/hide context box based on RAG toggle.
-
-        Args:
-            is_rag_enabled (bool): Whether RAG mode is enabled
-
-        Returns:
-            gr.update: Update object to modify the context box visibility
-        """
-        return gr.update(
-            visible=is_rag_enabled,  # Only show context box in RAG mode
-            value="" if not is_rag_enabled else None,  # Clear content when hiding
+        
+        # Event handlers
+        msg_input.submit(
+            fn=generate_response,
+            inputs=[msg_input, chatbot],
+            outputs=[msg_input, chatbot, context_display],
+            show_progress=True
         )
+        
+        send_btn.click(
+            fn=generate_response,
+            inputs=[msg_input, chatbot], 
+            outputs=[msg_input, chatbot, context_display],
+            show_progress=True
+        )
+        
+        clear_btn.click(
+            fn=clear_conversation,
+            outputs=[chatbot, context_display],
+            show_progress=False
+        )
+    
+    return interface
 
-    # Connect event handlers to UI components
-    # When user presses Enter in the message box
-    msg.submit(
-        respond,
-        [msg, chatbot, rag_enabled],
-        [msg, chatbot, context_box, rag_enabled],
-    )
-    # When user clicks the Submit button
-    submit.click(
-        respond,
-        [msg, chatbot, rag_enabled],
-        [msg, chatbot, context_box, rag_enabled],
-    )
-    # When user clicks the Clear button - reset everything
-    clear.click(
-        lambda: [[], "", True],
-        None,
-        [chatbot, context_box, rag_enabled],
-        queue=False,
-    )
-    # When user toggles the RAG switch - update context box visibility
-    rag_enabled.change(update_context_visibility, rag_enabled, context_box)
 
-    # Example queries to help users get started
-    gr.Examples(
-        examples=[
-            "Tell me about Arcee Fusion.",
-            "How does deepseek-R1 differ from deepseek-v3?",
-            "What is the main innovation in DELLA merging?",
-        ],
-        inputs=msg,
-    )
+# ============================================================================
+# Application Entry Point
+# ============================================================================
 
-# Run the app when this script is executed directly
+def main():
+    """Main application entry point."""
+    print("🚀 Starting RAG Document Chat Web Application")
+    print("="*60)
+    
+    # Create interface
+    interface = create_interface()
+    
+    # Launch configuration
+    launch_config = {
+        "share": False,           # Set to True to create public URL
+        "server_name": "0.0.0.0", # Allow external connections
+        "server_port": 7860,      # Default Gradio port
+        "show_error": True,       # Show errors in interface
+        "quiet": False,           # Show startup logs
+        "favicon_path": None,     # Could add custom favicon
+    }
+    
+    print(f"🌐 Launching web interface...")
+    print(f"📱 Open your browser to: http://localhost:{launch_config['server_port']}")
+    print(f"🛑 Press Ctrl+C to stop the server")
+    print("="*60)
+    
+    try:
+        interface.launch(**launch_config)
+    except KeyboardInterrupt:
+        print("\n👋 Shutting down gracefully...")
+    except Exception as e:
+        print(f"❌ Server error: {e}")
+        raise
+
+
 if __name__ == "__main__":
-    demo.launch(share=False)  # Launch the Gradio interface locally
+    main()

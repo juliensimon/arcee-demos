@@ -1,198 +1,284 @@
+#!/usr/bin/env python3
 """
-RAG (Retrieval-Augmented Generation) utilities for document processing and querying.
+RAG Demo Module
 
-This module provides functions for:
-1. Loading and processing PDF documents
-2. Creating and managing vector embeddings
-3. Setting up language models and QA chains
-4. Handling both RAG and vanilla LLM responses
+Utilities for document querying using Retrieval-Augmented Generation.
+This module provides core functionality for:
+- Loading pre-processed vector embeddings
+- Setting up language models and QA chains  
+- Handling RAG-powered responses with source citations
+- Command-line testing interface
+
+Usage:
+    python demo.py  # Run a sample query
+    
+Or import functions for use in other applications:
+    from demo import create_embeddings, create_llm, create_qa_chain
 """
 
-import glob
+import json
 import os
-import sys
 import time
+import warnings
+from typing import Dict, Any, List, Optional, Tuple
 
+# Suppress warnings for cleaner output
+warnings.filterwarnings("ignore", category=UserWarning, module="pydantic._internal._fields")
+
+# LangChain imports
 from langchain.chains import ConversationalRetrievalChain
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
-from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 
-# Set tokenizers parallelism before importing other libraries
-# os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+# ============================================================================
+# Configuration Management
+# ============================================================================
 
-# Constants
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_URL = "https://conductor.arcee.ai/v1"
-OPENAI_MODEL = "auto"
-CHROMA_PATH = "vectorstore"
-# CHROMA_PATH = "/data/vectorstore"
-PDF_PATH = "pdf"
-
-
-def create_llm(streaming=False):
-    """Initialize the OpenAI language model.
-
+def load_config(config_path: str = "config.json") -> Dict[str, Any]:
+    """
+    Load configuration from JSON file with fallback defaults.
+    
     Args:
-        streaming (bool): Whether to enable response streaming
-
+        config_path: Path to the configuration file
+        
     Returns:
-        ChatOpenAI: Configured language model instance
+        Configuration dictionary
+        
+    Note:
+        Uses fallback configuration if file is not found.
+    """
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("Warning: config.json not found, using minimal defaults")
+        return {
+            "embeddings": {
+                "model_name": "BAAI/bge-small-en-v1.5",
+                "normalize_embeddings": True
+            },
+            "paths": {
+                "vectorstore": "vectorstore",
+                "pdf": "pdf"
+            }
+        }
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in config file: {e}")
+        raise
+
+
+# Load global configuration
+config = load_config()
+CHROMA_PATH = config["paths"]["vectorstore"]
+
+
+# ============================================================================
+# Text Cleaning Utilities
+# ============================================================================
+
+def clean_response(text: str) -> str:
+    """
+    Clean model response by removing special tokens and formatting artifacts.
+    
+    Args:
+        text: Raw response text from the model
+        
+    Returns:
+        Cleaned response text with special tokens removed
+        
+    Note:
+        Removes common LLM special tokens like <|im_end|>, <|endoftext|>, etc.
+    """
+    if not text:
+        return text
+    
+    # Common special tokens to remove
+    special_tokens = [
+        "<|im_end|>", "<|im_start|>", "<|endoftext|>",
+        "<|system|>", "<|user|>", "<|assistant|>", 
+        "<|end|>", "<|start|>"
+    ]
+    
+    cleaned_text = text
+    for token in special_tokens:
+        cleaned_text = cleaned_text.replace(token, "")
+    
+    # Clean up whitespace
+    return cleaned_text.strip()
+
+
+# ============================================================================
+# Device Detection and Model Loading  
+# ============================================================================
+
+def detect_optimal_device() -> str:
+    """
+    Automatically detect the optimal device for model inference.
+    
+    Returns:
+        Device string: 'cuda', 'mps', or 'cpu'
+        
+    Priority order: CUDA → MPS → CPU
+    """
+    try:
+        import torch
+        
+        if torch.cuda.is_available():
+            device_name = torch.cuda.get_device_name()
+            print(f"🚀 Auto-detected CUDA GPU: {device_name}")
+            return "cuda"
+        elif torch.backends.mps.is_available():
+            print("🍎 Auto-detected Apple Silicon MPS GPU")
+            return "mps"
+        else:
+            print("💻 Auto-detected CPU (no GPU available)")
+            return "cpu"
+            
+    except ImportError:
+        print("⚠️  Warning: PyTorch not available, using CPU")
+        return "cpu"
+
+
+def create_llm(streaming: bool = False) -> ChatOpenAI:
+    """
+    Initialize local OpenAI compatible language model.
+    
+    Args:
+        streaming: Whether to enable response streaming
+        
+    Returns:
+        Configured ChatOpenAI instance for local model
+        
+    Note:
+        Assumes local model running on localhost:8080
     """
     return ChatOpenAI(
-        model=OPENAI_MODEL,
-        openai_api_key=OPENAI_API_KEY,
-        base_url=OPENAI_URL,
+        model="local-model",  # Dummy name for local endpoints
+        base_url="http://localhost:8080/v1", 
+        api_key="dummy-key",  # Dummy key for local endpoints
         streaming=streaming,
+        temperature=0.1,  # Low temperature for more deterministic responses
     )
 
 
-def create_embeddings():
-    """Initialize the embedding model."""
-    return HuggingFaceEmbeddings(
-        model_name="BAAI/bge-small-en-v1.5",
-        model_kwargs={"device": "cpu"},
-        encode_kwargs={"normalize_embeddings": True},
-    )
-
-
-def get_text_splitter():
-    """Create text splitter with optimal settings."""
-    return RecursiveCharacterTextSplitter(
-        chunk_size=512,
-        chunk_overlap=128,
-        length_function=len,
-        add_start_index=True,
-    )
-
-
-def get_pdf_files():
-    """Get list of PDF files from the specified directory."""
-    if not os.path.exists(PDF_PATH):
-        os.makedirs(PDF_PATH)
-        return []
-    return list(glob.glob(os.path.join(PDF_PATH, "*.pdf")))
-
-
-def filter_metadata(doc):
-    """Filter out unwanted sections from documents.
-
-    Args:
-        doc: Document object with metadata
-
-    Returns:
-        bool: True if document should be kept, False if filtered out
+def create_embeddings() -> HuggingFaceEmbeddings:
     """
-    skip_sections = {"references", "acknowledgments", "appendix"}
-    section = doc.metadata.get("section", "").lower()
-    return not any(s in section for s in skip_sections)
+    Initialize embedding model with automatic device detection and MPS fallback.
+    
+    Returns:
+        Configured HuggingFaceEmbeddings instance
+        
+    Raises:
+        RuntimeError: If model loading fails on all devices
+        
+    Note:
+        Automatically tries MPS first on Apple Silicon, falls back to CPU if needed.
+    """
+    if not config:
+        raise RuntimeError("Configuration not loaded")
+    
+    embeddings_config = config["embeddings"]
+    model_name = embeddings_config["model_name"]
+    device = detect_optimal_device()
+    
+    # Try MPS with automatic fallback for Apple Silicon compatibility
+    if device == "mps":
+        try:
+            print(f"🔄 Loading embedding model: {model_name}")
+            print("   Attempting MPS (Apple Silicon GPU)...")
+            
+            return HuggingFaceEmbeddings(
+                model_name=model_name,
+                model_kwargs={"device": "mps", "trust_remote_code": True},
+                encode_kwargs={"normalize_embeddings": embeddings_config["normalize_embeddings"]},
+            )
+        except (ValueError, NotImplementedError, RuntimeError) as e:
+            # Check for known MPS compatibility issues
+            error_keywords = ["meta tensor", "meta device", "Cannot copy out of meta tensor"]
+            if any(keyword in str(e) for keyword in error_keywords):
+                print("⚠️  MPS failed with meta tensor error, falling back to CPU")
+                device = "cpu"
+            else:
+                print(f"❌ MPS loading failed: {e}")
+                raise
+    
+    # Use CUDA or CPU (or fallback from MPS)
+    print(f"🔄 Loading embedding model with {device.upper()}: {model_name}")
+    return HuggingFaceEmbeddings(
+        model_name=model_name,
+        model_kwargs={"device": device, "trust_remote_code": True},
+        encode_kwargs={"normalize_embeddings": embeddings_config["normalize_embeddings"]},
+    )
 
 
-def process_documents(documents, text_splitter):
-    """Process and filter documents into chunks."""
-    chunks = text_splitter.split_documents(documents)
-    return [chunk for chunk in chunks if filter_metadata(chunk)]
+# ============================================================================
+# Vector Store Management
+# ============================================================================
 
-
-def load_or_create_vectorstore(embeddings):
-    """Load existing vectorstore or create a new one."""
-    if os.path.exists(CHROMA_PATH):
-        return handle_existing_vectorstore(embeddings)
-    return create_new_vectorstore(embeddings)
-
-
-def handle_existing_vectorstore(embeddings):
-    """Handle loading and updating existing vectorstore.
-
+def load_vectorstore(embeddings: HuggingFaceEmbeddings) -> Chroma:
+    """
+    Load existing vector store for document querying.
+    
     Args:
         embeddings: Embedding model instance
-
+        
     Returns:
-        Chroma: Loaded and potentially updated vectorstore
-
-    Exits if no PDF files are found.
+        Loaded Chroma vector store
+        
+    Raises:
+        FileNotFoundError: If vector store doesn't exist
+        
+    Note:
+        Vector store must be created first using ingest.py
     """
-    print("Loading existing Chroma database...")
-    vectorstore = Chroma(persist_directory=CHROMA_PATH, embedding_function=embeddings)
-
-    current_pdfs = get_pdf_files()
-    if not current_pdfs:
-        print("No PDF files found in directory.")
-        sys.exit(1)
-
-    collection = vectorstore.get()
-    processed_files = {
-        meta.get("source")
-        for meta in collection["metadatas"]
-        if meta and meta.get("source")
-    }
-
-    new_pdfs = [pdf for pdf in current_pdfs if pdf not in processed_files]
-
-    if new_pdfs:
-        update_vectorstore(vectorstore, new_pdfs, processed_files)
-    else:
-        print("No new PDF files to process.")
-
-    return vectorstore
+    if not os.path.exists(CHROMA_PATH):
+        raise FileNotFoundError(
+            f"📂 Vector store not found at '{CHROMA_PATH}'\n"
+            "Please run 'python ingest.py' first to process your documents."
+        )
+    
+    print(f"📚 Loading vector database from: {CHROMA_PATH}")
+    return Chroma(persist_directory=CHROMA_PATH, embedding_function=embeddings)
 
 
-def update_vectorstore(vectorstore, new_pdfs, processed_files):
-    """Update existing vectorstore with new documents."""
-    print(f"Found {len(new_pdfs)} new PDF files to process...")
-    loader = DirectoryLoader(PDF_PATH, glob="**/*.pdf", loader_cls=PyPDFLoader)
-    documents = loader.load()
-    new_documents = [
-        doc for doc in documents if doc.metadata.get("source") not in processed_files
-    ]
+# ============================================================================
+# Question-Answering Chain Setup
+# ============================================================================
 
-    filtered_chunks = process_documents(new_documents, get_text_splitter())
-    if filtered_chunks:
-        print("Adding new documents to existing database...")
-        vectorstore.add_documents(filtered_chunks)
-        print("Database updated successfully!")
+def create_qa_chain(llm: ChatOpenAI, vectorstore: Chroma) -> ConversationalRetrievalChain:
+    """
+    Create the RAG question-answering chain.
+    
+    Args:
+        llm: Language model instance
+        vectorstore: Vector store for document retrieval
+        
+    Returns:
+        Configured ConversationalRetrievalChain for RAG
+        
+    Note:
+        Uses similarity search with k=3 documents for context
+    """
+    # Custom prompt template for better responses
+    prompt_template = """You are a helpful AI assistant that answers questions based on provided context and your knowledge.
 
-
-def create_new_vectorstore(embeddings):
-    """Create a new vectorstore from documents."""
-    print("Creating new Chroma database...")
-    pdf_files = get_pdf_files()
-    if not pdf_files:
-        print(f"No PDF files found in '{PDF_PATH}' directory!")
-        print(f"Please add your PDF files to the '{PDF_PATH}' directory and run again.")
-        sys.exit(1)
-
-    print(f"Found {len(pdf_files)} PDF files to process...")
-    print("(This may take a while as documents need to be processed and embedded)")
-
-    os.makedirs(CHROMA_PATH, exist_ok=True)
-
-    loader = DirectoryLoader(PDF_PATH, glob="**/*.pdf", loader_cls=PyPDFLoader)
-    documents = loader.load()
-    filtered_chunks = process_documents(documents, get_text_splitter())
-
-    return Chroma.from_documents(
-        documents=filtered_chunks,
-        embedding=embeddings,
-        persist_directory=CHROMA_PATH,
-    )
-
-
-def create_qa_chain(llm, vectorstore):
-    """Create the question-answering chain."""
-    prompt_template = """Answer the question using your own knowledge and the provided context.
-
-Context:
+Context from documents:
 {context}
-
-Question: {question}
 
 Previous conversation:
 {chat_history}
+
+Question: {question}
+
+Instructions:
+- Use the provided context to answer the question accurately
+- If the context doesn't contain enough information, say so clearly
+- Provide specific details and examples when available
+- Be concise but comprehensive
+- Cite relevant information from the context
 
 Answer:"""
 
@@ -201,98 +287,145 @@ Answer:"""
     return ConversationalRetrievalChain.from_llm(
         llm=llm,
         retriever=vectorstore.as_retriever(
-            search_type="similarity", search_kwargs={"k": 3}
+            search_type="similarity", 
+            search_kwargs={"k": 3}  # Retrieve top 3 most relevant documents
         ),
         return_source_documents=True,
         combine_docs_chain_kwargs={"prompt": prompt},
-        chain_type="stuff",
-        verbose=True,
+        chain_type="stuff",  # Stuff all retrieved docs into the prompt
+        verbose=False,  # Set to True for debugging
     )
 
 
-def get_vanilla_response(query):
-    """Get response from vanilla chain without RAG with streaming."""
-    streaming_llm = create_llm(streaming=True)
+# ============================================================================
+# Response Generation and Display
+# ============================================================================
 
-    vanilla_prompt = ChatPromptTemplate.from_template(
-        """
-Question: {question}
+def format_sources(source_documents: List) -> str:
+    """
+    Format source documents for display.
+    
+    Args:
+        source_documents: List of retrieved document objects
+        
+    Returns:
+        Formatted string with unique source citations
+    """
+    if not source_documents:
+        return ""
+    
+    sources = []
+    seen_sources = set()
+    
+    for doc in source_documents:
+        source = doc.metadata.get("source", "Unknown")
+        page = doc.metadata.get("page", "unknown")
+        source_key = f"{source}:{page}"
+        
+        if source_key not in seen_sources:
+            # Clean up source path for display
+            display_source = os.path.basename(source) if source != "Unknown" else source
+            sources.append(f"  📄 {display_source}, page {page}")
+            seen_sources.add(source_key)
+    
+    return "\n\n📚 Sources:\n" + "\n".join(sources) if sources else ""
 
-Instructions:
-- If you don't know the answer, say so
-- Be concise and clear
-- Only state what you're confident about
 
-Answer:"""
-    )
-
-    chain = vanilla_prompt | streaming_llm
-
-    print("\n=== Vanilla Response (No RAG) ===")
-
-    try:
-        print("Answer: ", end="", flush=True)
-        for chunk in chain.stream({"question": query}):
-            print(chunk.content, end="", flush=True)
-        print()  # New line after streaming completes
-
-    except (KeyboardInterrupt, ConnectionError) as e:
-        print(f"\nError getting vanilla response: {str(e)}")
-
-
-def get_rag_response(qa_chain, query, chat_history):
-    """Get response from RAG-powered chain with streaming.
-
+def get_rag_response(qa_chain: ConversationalRetrievalChain, 
+                    query: str, 
+                    chat_history: List[Tuple[str, str]]) -> None:
+    """
+    Generate and display RAG-powered response with streaming effect.
+    
     Args:
         qa_chain: The QA chain instance
-        query (str): User's question
-        chat_history (list): Previous conversation history
+        query: User's question
+        chat_history: Previous conversation history as list of (human, ai) tuples
+        
+    Note:
+        Displays response with character-by-character streaming for better UX
     """
-    print("\n=== RAG Response ===")
+    print("\n" + "="*60)
+    print("🤖 RAG Response")
+    print("="*60)
 
     try:
-        # First get the result to ensure we have the answer and sources
+        # Get response from QA chain
         result = qa_chain.invoke({"question": query, "chat_history": chat_history})
-
-        # Print the answer with character-by-character "streaming" simulation
-        print("\nAnswer: ", end="", flush=True)
-        answer = result.get("answer", "No answer found.")
-        for char in answer:
+        
+        # Clean and display answer with streaming effect
+        answer = result.get("answer", "❌ No answer found.")
+        cleaned_answer = clean_response(answer)
+        
+        print(f"\n💬 Question: {query}")
+        print(f"\n✨ Answer: ", end="", flush=True)
+        
+        # Simulate streaming for better user experience
+        for char in cleaned_answer:
             print(char, end="", flush=True)
-            time.sleep(0.005)  # Small delay to simulate streaming
-        print()
-
-        # Print sources
-        if result.get("source_documents"):
-            print("\nSources:")
-            seen_sources = set()
-            for doc in result["source_documents"]:
-                source = doc.metadata.get("source", "Unknown")
-                page = doc.metadata.get("page", "unknown")
-                source_key = f"{source}:{page}"
-
-                if source_key not in seen_sources:
-                    print(f"- {source}, page {page}")
-                    seen_sources.add(source_key)
+            time.sleep(0.003)  # Small delay for streaming effect
+        
+        # Display sources
+        sources = format_sources(result.get("source_documents", []))
+        if sources:
+            print(sources)
+        else:
+            print("\n\n📚 Sources: No specific sources found")
+            
+        print("\n" + "="*60)
 
     except (KeyboardInterrupt, ConnectionError) as e:
-        print(f"\nError: {str(e)}")
+        print(f"\n❌ Error generating response: {str(e)}")
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {str(e)}")
 
 
-def main():
-    """Main execution function."""
-    # Create streaming LLM for RAG
-    llm = create_llm(streaming=True)
-    embeddings = create_embeddings()
-    vectorstore = load_or_create_vectorstore(embeddings)
-    qa_chain = create_qa_chain(llm, vectorstore)
+# ============================================================================
+# Main Demo Function
+# ============================================================================
 
-    chat_history = []
-    query = "Tell me about Arcee Fusion."
-
-    # Get both vanilla and RAG responses
-    get_vanilla_response(query)
-    get_rag_response(qa_chain, query, chat_history)
+def main() -> None:
+    """
+    Main demo function for testing RAG functionality.
+    
+    Demonstrates:
+    - Loading vector store
+    - Creating QA chain  
+    - Generating RAG response
+    - Displaying results with sources
+    """
+    print("🚀 Starting RAG Demo")
+    print("="*60)
+    
+    try:
+        # Initialize components
+        print("🔧 Initializing components...")
+        llm = create_llm(streaming=True)
+        embeddings = create_embeddings()
+        vectorstore = load_vectorstore(embeddings)
+        qa_chain = create_qa_chain(llm, vectorstore)
+        
+        # Test query
+        chat_history = []
+        query = "What are the main topics covered in the documentation?"
+        
+        print(f"✅ Initialization complete!")
+        
+        # Generate response
+        get_rag_response(qa_chain, query, chat_history)
+        
+        print(f"\n🎉 Demo completed successfully!")
+        print(f"💡 Try running 'python app.py' for the web interface")
+        
+    except FileNotFoundError as e:
+        print(f"❌ Error: {e}")
+        print(f"\n🔧 To fix this:")
+        print(f"   1. Add your files to the 'pdf' and/or 'text' directories")
+        print(f"   2. Run 'python ingest.py' to process the documents")
+        print(f"   3. Then run this script again")
+    except Exception as e:
+        print(f"❌ Unexpected error: {e}")
+        raise
 
 
 if __name__ == "__main__":

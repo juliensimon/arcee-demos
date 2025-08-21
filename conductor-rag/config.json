@@ -1,0 +1,72 @@
+{
+  "_comment": "RAG Document Processing Configuration",
+  "_description": "Configuration file for the RAG document ingestion and chat system",
+  
+  "embeddings": {
+    "_comment": "Embedding model configuration (device is auto-detected)",
+    "model_name": "jinaai/jina-embeddings-v2-base-code",
+    "normalize_embeddings": true
+  },
+  
+  "text_splitting": {
+    "_comment": "Text chunking parameters for document processing",
+    "chunk_size": 512,
+    "chunk_overlap": 128
+  },
+  
+  "paths": {
+    "_comment": "Directory paths for data storage and input",
+    "vectorstore": "vectorstore",
+    "pdf": "pdf",
+    "text": "text"
+  },
+  
+  "file_types": {
+    "_comment": "Supported file extensions for text processing",
+    "text_extensions": [
+      ".txt", ".md", ".markdown",
+      ".py", ".js", ".ts", ".java", ".cpp", ".c", ".h", ".hpp", ".cs", 
+      ".go", ".rs", ".php", ".rb", ".swift", ".kt", ".scala",
+      ".sh", ".bash", ".zsh", ".fish",
+      ".html", ".css", ".scss", ".sass",
+      ".json", ".xml", ".yaml", ".yml", ".toml",
+      ".ini", ".cfg", ".conf",
+      ".sql",
+      ".vhd", ".vhdl", ".v", ".sv", ".svh",
+      ".log"
+    ]
+  },
+  
+  "preset_models": {
+    "_comment": "Pre-configured embedding models for different use cases",
+    "_usage": "Copy the model name to embeddings.model_name to use",
+    
+    "general": {
+      "name": "BAAI/bge-small-en-v1.5",
+      "description": "General purpose embedding model, good for most documents"
+    },
+    
+    "code_jina": {
+      "name": "jinaai/jina-embeddings-v2-base-code", 
+      "description": "Code-optimized model, excellent for programming content"
+    },
+    
+    "code_salesforce_2b": {
+      "name": "Salesforce/SFR-Embedding-Code-2B_R",
+      "description": "Large code model (2B params), highest quality but slower"
+    },
+    
+    "code_salesforce_400m": {
+      "name": "Salesforce/SFR-Embedding-Code-400M_R",
+      "description": "Smaller code model (400M params), faster but lower quality"
+    }
+  },
+  
+  "_usage_notes": {
+    "device_detection": "Device (CPU/CUDA/MPS) is automatically detected",
+    "file_organization": "Place PDFs in 'pdf/' and text files in 'text/' directories",
+    "model_selection": "Choose embedding model based on your content type",
+    "chunk_tuning": "Adjust chunk_size/overlap based on document length and complexity",
+    "supported_extensions": "Text files: .txt .md .py .js .ts .java .cpp .c .go .rs .php .rb .swift .kt .scala .sh .bash .sql .html .css .json .xml .yaml .ini .vhd .v .sv .log"
+  }
+}
