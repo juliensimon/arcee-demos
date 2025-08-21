@@ -114,35 +114,10 @@ def clean_response(text: str) -> str:
 
 
 # ============================================================================
-# Device Detection and Model Loading  
+# Model Loading  
 # ============================================================================
 
-def detect_optimal_device() -> str:
-    """
-    Automatically detect the optimal device for model inference.
-    
-    Returns:
-        Device string: 'cuda', 'mps', or 'cpu'
-        
-    Priority order: CUDA → MPS → CPU
-    """
-    try:
-        import torch
-        
-        if torch.cuda.is_available():
-            device_name = torch.cuda.get_device_name()
-            print(f"🚀 Auto-detected CUDA GPU: {device_name}")
-            return "cuda"
-        elif torch.backends.mps.is_available():
-            print("🍎 Auto-detected Apple Silicon MPS GPU")
-            return "mps"
-        else:
-            print("💻 Auto-detected CPU (no GPU available)")
-            return "cpu"
-            
-    except ImportError:
-        print("⚠️  Warning: PyTorch not available, using CPU")
-        return "cpu"
+
 
 
 def create_llm(streaming: bool = False) -> ChatOpenAI:
