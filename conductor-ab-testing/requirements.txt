@@ -4,3 +4,4 @@ accelerate
 sentence-transformers
 gradio
 openai
+together
