@@ -169,50 +169,29 @@ def create_llm(streaming: bool = False) -> ChatOpenAI:
 
 def create_embeddings() -> HuggingFaceEmbeddings:
     """
-    Initialize embedding model with automatic device detection and MPS fallback.
+    Initialize embedding model for chat/inference (always uses CPU).
     
     Returns:
         Configured HuggingFaceEmbeddings instance
         
     Raises:
-        RuntimeError: If model loading fails on all devices
+        RuntimeError: If model loading fails
         
     Note:
-        Automatically tries MPS first on Apple Silicon, falls back to CPU if needed.
+        Always uses CPU for chat to ensure consistent performance and compatibility.
+        For ingestion with auto-detection, use the create_embeddings function in ingest.py
     """
     if not config:
         raise RuntimeError("Configuration not loaded")
     
     embeddings_config = config["embeddings"]
     model_name = embeddings_config["model_name"]
-    device = detect_optimal_device()
     
-    # Try MPS with automatic fallback for Apple Silicon compatibility
-    if device == "mps":
-        try:
-            print(f"🔄 Loading embedding model: {model_name}")
-            print("   Attempting MPS (Apple Silicon GPU)...")
-            
-            return HuggingFaceEmbeddings(
-                model_name=model_name,
-                model_kwargs={"device": "mps", "trust_remote_code": True},
-                encode_kwargs={"normalize_embeddings": embeddings_config["normalize_embeddings"]},
-            )
-        except (ValueError, NotImplementedError, RuntimeError) as e:
-            # Check for known MPS compatibility issues
-            error_keywords = ["meta tensor", "meta device", "Cannot copy out of meta tensor"]
-            if any(keyword in str(e) for keyword in error_keywords):
-                print("⚠️  MPS failed with meta tensor error, falling back to CPU")
-                device = "cpu"
-            else:
-                print(f"❌ MPS loading failed: {e}")
-                raise
-    
-    # Use CUDA or CPU (or fallback from MPS)
-    print(f"🔄 Loading embedding model with {device.upper()}: {model_name}")
+    # Always use CPU for chat/inference
+    print(f"🔄 Loading embedding model for chat (CPU): {model_name}")
     return HuggingFaceEmbeddings(
         model_name=model_name,
-        model_kwargs={"device": device, "trust_remote_code": True},
+        model_kwargs={"device": "cpu", "trust_remote_code": True},
         encode_kwargs={"normalize_embeddings": embeddings_config["normalize_embeddings"]},
     )
 
