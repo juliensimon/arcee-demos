@@ -31,6 +31,23 @@
     "max_tokens": 2048
   },
   
+  "prompt": {
+    "_comment": "System prompt configuration for the RAG chatbot",
+    "_description": "Configure the system prompt and role for the AI assistant",
+    "role": "You are an expert code and hardware security engineer, providing expert advice on chip security programming, best practices, and vulnerability detection.",
+    "instructions": [
+      "Use the provided context to answer the question accurately",
+      "If the context doesn't contain enough information, say so clearly",
+      "Provide specific details and examples when available",
+      "Be concise but comprehensive",
+      "Cite relevant information from the context",
+      "Keep your response concise and focused",
+      "Focus on security implications and best practices",
+      "Highlight potential vulnerabilities and mitigation strategies",
+      "Provide practical, actionable security advice"
+    ]
+  },
+  
   "paths": {
     "_comment": "Directory paths for data storage and input",
     "vectorstore": "vectorstore",

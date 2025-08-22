@@ -97,7 +97,16 @@ You can customize the embedding model, text splitting, paths, and LLM settings b
     "model_name": "local-model",
     "api_key": "dummy-key",
     "temperature": 0.1,
-    "streaming": false
+    "streaming": false,
+    "max_tokens": 2048
+  },
+  "prompt": {
+    "role": "You are an expert code and hardware security engineer...",
+    "instructions": [
+      "Use the provided context to answer the question accurately",
+      "Focus on security implications and best practices",
+      "Highlight potential vulnerabilities and mitigation strategies"
+    ]
   },
   "paths": {
     "vectorstore": "vectorstore",
@@ -117,6 +126,8 @@ You can customize the embedding model, text splitting, paths, and LLM settings b
 - `llm.temperature`: Response creativity (0.0 = deterministic, 1.0 = creative)
 - `llm.streaming`: Whether to enable streaming responses
 - `llm.max_tokens`: Maximum number of tokens for responses
+- `prompt.role`: The AI assistant's role and expertise area
+- `prompt.instructions`: List of specific instructions for the AI to follow
 - `paths.vectorstore`: Directory for storing vector database
 - `paths.pdf`: Directory containing PDF files
 
@@ -174,6 +185,28 @@ To use a preset model, simply copy the model name from the presets:
     "api_key": "your-openai-api-key",
     "temperature": 0.1,
     "streaming": false
+  }
+}
+```
+
+**Prompt Customization:**
+You can customize the AI assistant's role and behavior:
+
+```json
+{
+  "prompt": {
+    "role": "You are an expert code and hardware security engineer, providing expert advice on chip security programming, best practices, and vulnerability detection.",
+    "instructions": [
+      "Use the provided context to answer the question accurately",
+      "If the context doesn't contain enough information, say so clearly",
+      "Provide specific details and examples when available",
+      "Be concise but comprehensive",
+      "Cite relevant information from the context",
+      "Keep your response concise and focused",
+      "Focus on security implications and best practices",
+      "Highlight potential vulnerabilities and mitigation strategies",
+      "Provide practical, actionable security advice"
+    ]
   }
 }
 ```

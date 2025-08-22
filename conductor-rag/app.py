@@ -29,7 +29,7 @@ import gradio as gr
 
 # Import core RAG functionality
 from demo import (clean_response, create_embeddings, create_llm,
-                  create_qa_chain, format_sources, load_vectorstore)
+                  create_qa_chain, format_sources, load_vectorstore, config)
 from langchain.chains import ConversationalRetrievalChain
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -190,24 +190,34 @@ def create_qa_chain_with_params(llm, vectorstore, num_chunks: int = 3):
     Returns:
         Configured ConversationalRetrievalChain with custom parameters
     """
-    # Custom prompt template for better responses
-    prompt_template = """You are a helpful AI assistant that answers questions based on provided context and your knowledge.
+    # Get prompt configuration from config
+    prompt_config = config.get("prompt", {})
+    role = prompt_config.get("role", "You are a helpful AI assistant that answers questions based on provided context and your knowledge.")
+    instructions = prompt_config.get("instructions", [
+        "Use the provided context to answer the question accurately",
+        "If the context doesn't contain enough information, say so clearly",
+        "Provide specific details and examples when available",
+        "Be concise but comprehensive",
+        "Cite relevant information from the context",
+        "Keep your response concise and focused"
+    ])
+    
+    # Build instructions string
+    instructions_text = "\n".join([f"- {instruction}" for instruction in instructions])
+    
+    # Custom prompt template using configurable settings
+    prompt_template = f"""{role}
 
 Context from documents:
-{context}
+{{context}}
 
 Previous conversation:
-{chat_history}
+{{chat_history}}
 
-Question: {question}
+Question: {{question}}
 
 Instructions:
-- Use the provided context to answer the question accurately
-- If the context doesn't contain enough information, say so clearly
-- Provide specific details and examples when available
-- Be concise but comprehensive
-- Cite relevant information from the context
-- Keep your response concise and focused
+{instructions_text}
 
 Answer:"""
 

@@ -236,23 +236,33 @@ def create_qa_chain(
         Uses similarity search with configurable number of documents for context
         (controlled by config.retrieval.num_chunks)
     """
-    # Custom prompt template for better responses
-    prompt_template = """You are a helpful AI assistant that answers questions based on provided context and your knowledge.
+    # Get prompt configuration from config
+    prompt_config = config.get("prompt", {})
+    role = prompt_config.get("role", "You are a helpful AI assistant that answers questions based on provided context and your knowledge.")
+    instructions = prompt_config.get("instructions", [
+        "Use the provided context to answer the question accurately",
+        "If the context doesn't contain enough information, say so clearly",
+        "Provide specific details and examples when available",
+        "Be concise but comprehensive",
+        "Cite relevant information from the context"
+    ])
+    
+    # Build instructions string
+    instructions_text = "\n".join([f"- {instruction}" for instruction in instructions])
+    
+    # Custom prompt template using configurable settings
+    prompt_template = f"""{role}
 
 Context from documents:
-{context}
+{{context}}
 
 Previous conversation:
-{chat_history}
+{{chat_history}}
 
-Question: {question}
+Question: {{question}}
 
 Instructions:
-- Use the provided context to answer the question accurately
-- If the context doesn't contain enough information, say so clearly
-- Provide specific details and examples when available
-- Be concise but comprehensive
-- Cite relevant information from the context
+{instructions_text}
 
 Answer:"""
 
