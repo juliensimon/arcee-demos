@@ -14,7 +14,7 @@ Features:
 
 Usage:
     python app.py
-    
+
 Then open your browser to the displayed URL (typically http://localhost:7860)
 
 Requirements:
@@ -23,15 +23,15 @@ Requirements:
 """
 
 import os
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import gradio as gr
-
-# Import core RAG functionality
-from demo import (clean_response, create_embeddings, create_llm,
-                  create_qa_chain, format_sources, load_vectorstore, config)
 from langchain.chains import ConversationalRetrievalChain
 from langchain_core.prompts import ChatPromptTemplate
+
+# Import core RAG functionality
+from demo import (clean_response, config, create_embeddings, create_llm,
+                  load_vectorstore)
 
 # ============================================================================
 # Application Configuration
@@ -101,10 +101,10 @@ def initialize_rag_system():
 
 
 def generate_response(
-    message: str, 
-    chat_history: List[List[str]], 
+    message: str,
+    chat_history: List[List[str]],
     num_chunks: int = 3,
-    max_tokens: int = 2048
+    max_tokens: int = 2048,
 ) -> Tuple[str, List[List[str]], str]:
     """
     Generate RAG-powered response to user query with configurable parameters.
@@ -136,17 +136,19 @@ def generate_response(
         temp_llm = create_llm()
         # Set max_tokens on the LLM instance
         temp_llm.max_tokens = max_tokens
-        
+
         embeddings = create_embeddings()
         vectorstore = load_vectorstore(embeddings)
-        
+
         # Get documents with similarity scores
-        docs_with_scores = vectorstore.similarity_search_with_score(message, k=num_chunks)
-        
+        docs_with_scores = vectorstore.similarity_search_with_score(
+            message, k=num_chunks
+        )
+
         # Extract documents and scores
         source_documents = [doc for doc, score in docs_with_scores]
         similarity_scores = [score for doc, score in docs_with_scores]
-        
+
         # Create QA chain with custom parameters
         temp_qa_chain = create_qa_chain_with_params(temp_llm, vectorstore, num_chunks)
 
@@ -192,19 +194,25 @@ def create_qa_chain_with_params(llm, vectorstore, num_chunks: int = 3):
     """
     # Get prompt configuration from config
     prompt_config = config.get("prompt", {})
-    role = prompt_config.get("role", "You are a helpful AI assistant that answers questions based on provided context and your knowledge.")
-    instructions = prompt_config.get("instructions", [
-        "Use the provided context to answer the question accurately",
-        "If the context doesn't contain enough information, say so clearly",
-        "Provide specific details and examples when available",
-        "Be concise but comprehensive",
-        "Cite relevant information from the context",
-        "Keep your response concise and focused"
-    ])
-    
+    role = prompt_config.get(
+        "role",
+        "You are a helpful AI assistant that answers questions based on provided context and your knowledge.",
+    )
+    instructions = prompt_config.get(
+        "instructions",
+        [
+            "Use the provided context to answer the question accurately",
+            "If the context doesn't contain enough information, say so clearly",
+            "Provide specific details and examples when available",
+            "Be concise but comprehensive",
+            "Cite relevant information from the context",
+            "Keep your response concise and focused",
+        ],
+    )
+
     # Build instructions string
     instructions_text = "\n".join([f"- {instruction}" for instruction in instructions])
-    
+
     # Custom prompt template using configurable settings
     prompt_template = f"""{role}
 
@@ -228,7 +236,7 @@ Answer:"""
         search_type="similarity_score_threshold",
         search_kwargs={
             "k": num_chunks,
-            "score_threshold": 0.0  # Include all results, we'll filter by k
+            "score_threshold": 0.0,  # Include all results, we'll filter by k
         },
     )
 
@@ -242,7 +250,9 @@ Answer:"""
     )
 
 
-def format_sources_with_scores(source_documents: List, similarity_scores: List[float]) -> str:
+def format_sources_with_scores(
+    source_documents: List, similarity_scores: List[float]
+) -> str:
     """
     Format source documents with similarity scores for display.
 
@@ -270,13 +280,17 @@ def format_sources_with_scores(source_documents: List, similarity_scores: List[f
             display_source = os.path.basename(source) if source != "Unknown" else source
             # Format score as percentage (higher is better for cosine similarity)
             score_percent = (score + 1) * 50  # Convert from [-1,1] to [0,100]
-            sources.append(f"  📄 {display_source}, page {page} (Relevance: {score_percent:.1f}%)")
+            sources.append(
+                f"  📄 {display_source}, page {page} (Relevance: {score_percent:.1f}%)"
+            )
             seen_sources.add(source_key)
 
     return "\n\n📚 Sources:\n" + "\n".join(sources) if sources else ""
 
 
-def extract_context_with_scores(source_documents: List, similarity_scores: List[float]) -> str:
+def extract_context_with_scores(
+    source_documents: List, similarity_scores: List[float]
+) -> str:
     """
     Extract and format context from retrieved documents with similarity scores.
 
@@ -291,7 +305,9 @@ def extract_context_with_scores(source_documents: List, similarity_scores: List[
         return "No context retrieved for this query."
 
     context_parts = []
-    for i, (doc, score) in enumerate(zip(source_documents, similarity_scores), 1):  # Show all retrieved sources
+    for i, (doc, score) in enumerate(
+        zip(source_documents, similarity_scores), 1
+    ):  # Show all retrieved sources
         source = doc.metadata.get("source", "Unknown")
         page = doc.metadata.get("page", "unknown")
         content = (
@@ -299,46 +315,13 @@ def extract_context_with_scores(source_documents: List, similarity_scores: List[
             if len(doc.page_content) > 500
             else doc.page_content
         )
-        
+
         # Format score as percentage
         score_percent = (score + 1) * 50  # Convert from [-1,1] to [0,100]
 
         context_parts.append(
             f"""
 📄 **Source {i}:** {source} (page {page}) - Relevance: {score_percent:.1f}%
-📝 **Content:** {content}
-"""
-        )
-
-    return "\n".join(context_parts)
-
-
-def extract_context(source_documents: List) -> str:
-    """
-    Extract and format context from retrieved documents.
-
-    Args:
-        source_documents: List of retrieved document objects
-
-    Returns:
-        Formatted context string for display
-    """
-    if not source_documents:
-        return "No context retrieved for this query."
-
-    context_parts = []
-    for i, doc in enumerate(source_documents[:3], 1):  # Show top 3 sources
-        source = doc.metadata.get("source", "Unknown")
-        page = doc.metadata.get("page", "unknown")
-        content = (
-            doc.page_content[:500] + "..."
-            if len(doc.page_content) > 500
-            else doc.page_content
-        )
-
-        context_parts.append(
-            f"""
-📄 **Source {i}:** {source} (page {page})
 📝 **Content:** {content}
 """
         )
@@ -423,7 +406,7 @@ def create_interface():
                 # Control buttons and settings
                 with gr.Row():
                     clear_btn = gr.Button("🗑️ Clear Chat", variant="secondary")
-                    
+
                 # Settings panel
                 with gr.Accordion("⚙️ Advanced Settings", open=False):
                     with gr.Row():
@@ -433,7 +416,7 @@ def create_interface():
                             value=3,
                             step=1,
                             label="📚 Number of Chunks to Retrieve",
-                            info="More chunks = more context but slower response"
+                            info="More chunks = more context but slower response",
                         )
                         max_tokens = gr.Slider(
                             minimum=512,
@@ -441,7 +424,7 @@ def create_interface():
                             value=2048,
                             step=256,
                             label="🔤 Max Response Tokens",
-                            info="Higher values = longer responses"
+                            info="Higher values = longer responses",
                         )
 
             # Right column: Context display

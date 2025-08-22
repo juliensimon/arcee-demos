@@ -138,10 +138,12 @@ def create_llm(streaming: bool = None) -> ChatOpenAI:
         raise RuntimeError("Configuration not loaded")
 
     llm_config = config.get("llm", {})
-    
+
     # Use provided streaming parameter or fall back to config
-    use_streaming = streaming if streaming is not None else llm_config.get("streaming", False)
-    
+    use_streaming = (
+        streaming if streaming is not None else llm_config.get("streaming", False)
+    )
+
     return ChatOpenAI(
         model=llm_config.get("model_name", "local-model"),
         base_url=llm_config.get("base_url", "http://localhost:8080/v1"),
@@ -238,18 +240,24 @@ def create_qa_chain(
     """
     # Get prompt configuration from config
     prompt_config = config.get("prompt", {})
-    role = prompt_config.get("role", "You are a helpful AI assistant that answers questions based on provided context and your knowledge.")
-    instructions = prompt_config.get("instructions", [
-        "Use the provided context to answer the question accurately",
-        "If the context doesn't contain enough information, say so clearly",
-        "Provide specific details and examples when available",
-        "Be concise but comprehensive",
-        "Cite relevant information from the context"
-    ])
-    
+    role = prompt_config.get(
+        "role",
+        "You are a helpful AI assistant that answers questions based on provided context and your knowledge.",
+    )
+    instructions = prompt_config.get(
+        "instructions",
+        [
+            "Use the provided context to answer the question accurately",
+            "If the context doesn't contain enough information, say so clearly",
+            "Provide specific details and examples when available",
+            "Be concise but comprehensive",
+            "Cite relevant information from the context",
+        ],
+    )
+
     # Build instructions string
     instructions_text = "\n".join([f"- {instruction}" for instruction in instructions])
-    
+
     # Custom prompt template using configurable settings
     prompt_template = f"""{role}
 
