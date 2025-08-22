@@ -18,9 +18,8 @@ Or import functions for use in other applications:
 
 import json
 import os
-import time
 import warnings
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 # Suppress warnings for cleaner output
 warnings.filterwarnings(
