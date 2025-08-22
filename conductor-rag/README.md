@@ -30,6 +30,7 @@ This application provides an interactive chat interface that allows users to ask
 - **Source Citations**: Automatically includes relevant document sources and page numbers
 - **Interactive Interface**: Clean, user-friendly Gradio-based chat interface
 - **Context Visibility**: View the retrieved document chunks used to generate responses
+- **Configurable Parameters**: Adjust number of chunks and response length via UI controls
 - **Multi-Format Support**: Handles PDFs, text files, markdown, and code files
 - **Code-Optimized Models**: Specialized embedding models for code understanding
 
@@ -42,9 +43,9 @@ This application provides an interactive chat interface that allows users to ask
 
 ## Setup and Usage
 
-### 1. Setup Local Model
+### 1. Setup LLM Endpoint
 
-Before running the application, you need to have an OpenAI compatible model running locally on port 8080. Here are some popular options:
+Before running the application, you need to have an OpenAI compatible model endpoint available. You can configure the endpoint in `config.json`. Here are some popular options:
 
 ### Option 1: Ollama
 ```bash
@@ -75,20 +76,28 @@ python -m vllm.entrypoints.openai.api_server \
 2. Load your preferred model
 3. Start the local server on port 8080
 
+**Note:** After setting up your LLM endpoint, update the `llm` section in `config.json` with the correct URL, model name, and API key for your setup.
+
 ### 2. Configuration (Optional)
 
-You can customize the embedding model, text splitting, and paths by editing `config.json`:
+You can customize the embedding model, text splitting, paths, and LLM settings by editing `config.json`:
 
 ```json
 {
   "embeddings": {
     "model_name": "BAAI/bge-small-en-v1.5",
-    "device": "cpu",
     "normalize_embeddings": true
   },
   "text_splitting": {
     "chunk_size": 512,
     "chunk_overlap": 128
+  },
+  "llm": {
+    "base_url": "http://localhost:8080/v1",
+    "model_name": "local-model",
+    "api_key": "dummy-key",
+    "temperature": 0.1,
+    "streaming": false
   },
   "paths": {
     "vectorstore": "vectorstore",
@@ -99,10 +108,15 @@ You can customize the embedding model, text splitting, and paths by editing `con
 
 **Options:**
 - `embeddings.model_name`: HuggingFace model name for embeddings
-- `embeddings.device`: Device setting (ignored - auto-detection is used)
 - `embeddings.normalize_embeddings`: Whether to normalize embeddings
 - `text_splitting.chunk_size`: Size of text chunks (characters)
 - `text_splitting.chunk_overlap`: Overlap between chunks (characters)
+- `llm.base_url`: OpenAI-compatible API endpoint URL
+- `llm.model_name`: Model name for the LLM endpoint
+- `llm.api_key`: API key for authentication (use "dummy-key" for local models)
+- `llm.temperature`: Response creativity (0.0 = deterministic, 1.0 = creative)
+- `llm.streaming`: Whether to enable streaming responses
+- `llm.max_tokens`: Maximum number of tokens for responses
 - `paths.vectorstore`: Directory for storing vector database
 - `paths.pdf`: Directory containing PDF files
 
@@ -119,6 +133,47 @@ To use a preset model, simply copy the model name from the presets:
 {
   "embeddings": {
     "model_name": "jinaai/jina-embeddings-v2-base-code"
+  }
+}
+```
+
+**LLM Configuration Examples:**
+
+**Local Ollama:**
+```json
+{
+  "llm": {
+    "base_url": "http://localhost:11434/v1",
+    "model_name": "llama3.1:8b",
+    "api_key": "dummy-key",
+    "temperature": 0.1,
+    "streaming": false
+  }
+}
+```
+
+**Local vLLM:**
+```json
+{
+  "llm": {
+    "base_url": "http://localhost:8080/v1",
+    "model_name": "meta-llama/Llama-2-7b-chat-hf",
+    "api_key": "dummy-key",
+    "temperature": 0.1,
+    "streaming": false
+  }
+}
+```
+
+**OpenAI API:**
+```json
+{
+  "llm": {
+    "base_url": "https://api.openai.com/v1",
+    "model_name": "gpt-3.5-turbo",
+    "api_key": "your-openai-api-key",
+    "temperature": 0.1,
+    "streaming": false
   }
 }
 ```
@@ -162,6 +217,17 @@ python app.py
 ```
 
 This will start the Gradio web interface where you can chat with your documents and code.
+
+**UI Controls:**
+- **Number of Chunks**: Adjust how many document chunks are retrieved (1-10)
+- **Max Response Tokens**: Control the maximum length of responses (512-4096 tokens)
+- **Advanced Settings**: Click the accordion to access these controls
+
+You can also run the command-line demo:
+
+```bash
+python demo.py
+```
 
 ## Included Documents
 The following research papers are included in the `pdf` directory:

@@ -20,6 +20,17 @@
     "num_chunks": 3
   },
   
+  "llm": {
+    "_comment": "Language model configuration for RAG responses",
+    "_description": "Configure the OpenAI-compatible model endpoint",
+    "base_url": "http://localhost:8080/v1",
+    "model_name": "local-model",
+    "api_key": "dummy-key",
+    "temperature": 0.1,
+    "streaming": false,
+    "max_tokens": 2048
+  },
+  
   "paths": {
     "_comment": "Directory paths for data storage and input",
     "vectorstore": "vectorstore",

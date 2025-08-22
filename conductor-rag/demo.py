@@ -121,25 +121,34 @@ def clean_response(text: str) -> str:
 # ============================================================================
 
 
-def create_llm(streaming: bool = False) -> ChatOpenAI:
+def create_llm(streaming: bool = None) -> ChatOpenAI:
     """
-    Initialize local OpenAI compatible language model.
+    Initialize OpenAI compatible language model using configuration.
 
     Args:
-        streaming: Whether to enable response streaming
+        streaming: Whether to enable response streaming (overrides config if provided)
 
     Returns:
-        Configured ChatOpenAI instance for local model
+        Configured ChatOpenAI instance
 
     Note:
-        Assumes local model running on localhost:8080
+        Uses configuration from config.json for endpoint settings
     """
+    if not config:
+        raise RuntimeError("Configuration not loaded")
+
+    llm_config = config.get("llm", {})
+    
+    # Use provided streaming parameter or fall back to config
+    use_streaming = streaming if streaming is not None else llm_config.get("streaming", False)
+    
     return ChatOpenAI(
-        model="local-model",  # Dummy name for local endpoints
-        base_url="http://localhost:8080/v1",
-        api_key="dummy-key",  # Dummy key for local endpoints
-        streaming=streaming,
-        temperature=0.1,  # Low temperature for more deterministic responses
+        model=llm_config.get("model_name", "local-model"),
+        base_url=llm_config.get("base_url", "http://localhost:8080/v1"),
+        api_key=llm_config.get("api_key", "dummy-key"),
+        streaming=use_streaming,
+        temperature=llm_config.get("temperature", 0.1),
+        max_tokens=llm_config.get("max_tokens", 2048),
     )
 
 
@@ -306,7 +315,7 @@ def get_rag_response(
     chat_history: List[Tuple[str, str]],
 ) -> None:
     """
-    Generate and display RAG-powered response with streaming effect.
+    Generate and display RAG-powered response.
 
     Args:
         qa_chain: The QA chain instance
@@ -314,7 +323,7 @@ def get_rag_response(
         chat_history: Previous conversation history as list of (human, ai) tuples
 
     Note:
-        Displays response with character-by-character streaming for better UX
+        Displays complete response with source citations
     """
     print("\n" + "=" * 60)
     print("🤖 RAG Response")
@@ -324,24 +333,19 @@ def get_rag_response(
         # Get response from QA chain
         result = qa_chain.invoke({"question": query, "chat_history": chat_history})
 
-        # Clean and display answer with streaming effect
+        # Clean and display answer
         answer = result.get("answer", "❌ No answer found.")
         cleaned_answer = clean_response(answer)
 
         print(f"\n💬 Question: {query}")
-        print(f"\n✨ Answer: ", end="", flush=True)
-
-        # Simulate streaming for better user experience
-        for char in cleaned_answer:
-            print(char, end="", flush=True)
-            time.sleep(0.003)  # Small delay for streaming effect
+        print(f"\n✨ Answer: {cleaned_answer}")
 
         # Display sources
         sources = format_sources(result.get("source_documents", []))
         if sources:
             print(sources)
         else:
-            print("\n\n📚 Sources: No specific sources found")
+            print("\n📚 Sources: No specific sources found")
 
         print("\n" + "=" * 60)
 
@@ -372,7 +376,7 @@ def main() -> None:
     try:
         # Initialize components
         print("🔧 Initializing components...")
-        llm = create_llm(streaming=True)
+        llm = create_llm()  # Uses streaming setting from config
         embeddings = create_embeddings()
         vectorstore = load_vectorstore(embeddings)
         qa_chain = create_qa_chain(llm, vectorstore)
