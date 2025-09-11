@@ -1,0 +1,46 @@
+Prerequisites:
+- An Intel Xeon 6 server, e.g., an Amazon EC2 r8i.4xlarge or larger
+- Ubuntu 24
+- Docker (see https://docs.docker.com/engine/install/ubuntu/) 
+
+mkdir afm-openvino
+cd afm-openvino/
+virtualenv env
+source env/bin/activate
+pip install pip --upgrade
+pip install optimum-intel[openvino]@git+https://github.com/huggingface/optimum-intel.git
+<accept model terms at https://huggingface.co/arcee-ai/AFM-4.5B>
+hf auth login
+
+optimum-cli export openvino --model arcee-ai/AFM-4.5B --weight-format int8 afm_45b_ov_int8
+
+optimum-cli export openvino --model arcee-ai/AFM-4.5B --weight-format int4 afm_45b_ov_int4
+
+git clone https://github.com/openvinotoolkit/model_server
+
+cd model_server/demos/common/export_models
+
+mkdir ~/models
+
+python export_model.py text_generation --source_model arcee-ai/AFM-4.5B --model_name afm_45b_ov_int8 --weight-format int8 --config_file_path ~/models/config_all.json --model_repository_path ~/models --enable_prefix_caching --kv_cache_precision u8 --target CPU
+
+python export_model.py text_generation --source_model arcee-ai/AFM-4.5B --model_name afm_45b_ov_int4 --weight-format int4 --config_file_path ~/models/config_all.json --model_repository_path ~/models --enable_prefix_caching --kv_cache_precision u8 --target CPU
+
+docker pull openvino/model_server:latest
+
+docker run  --rm -p 8000:8000 -v ~/models:/models:ro openvino/model_server:latest --port 9000 --rest_port 8000 --config_path /models/config_all.json
+
+curl -s http://localhost:8000/v3/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "afm_45b_ov_int8",
+    "max_tokens": 128,
+    "temperature": 0.9,
+    "stream": false,
+    "messages": [
+      { "role": "system", "content": "You are a helpful assistant." },
+      { "role": "user", "content": "What are the 3 main tourist attractions in Paris?" }
+    ]
+  }' | jq .
+
+
