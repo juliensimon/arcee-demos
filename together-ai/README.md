@@ -1,16 +1,16 @@
-# Arcee AI Models Demo with Together.ai
+# Benchmark Arcee AI Models on Together.ai: Domain-Specific LLM Evaluation
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-orange.svg)](https://jupyter.org/)
 [![Together.ai](https://img.shields.io/badge/Together-AI-green)](https://together.ai)
 [![Arcee AI](https://img.shields.io/badge/Arcee-AI-purple)](https://arcee.ai)
 
-This repository contains demonstration notebooks and tools for using Arcee AI models through the Together.ai API platform, including a comprehensive domain-specific model evaluation tool.
+Demonstration notebooks and a standalone benchmarking tool for evaluating [Arcee AI](https://arcee.ai) models through the [Together.ai](https://together.ai) inference API — including domain-specific radar chart evaluations across S&P 500 industries.
 
 ## Prerequisites
 
 - Python 3.8+
-- A Together.ai API key (set as environment variable `TOGETHER_API_KEY`)
+- A Together.ai API key (set as `TOGETHER_API_KEY`)
 
 ## Installation
 
@@ -18,15 +18,9 @@ This repository contains demonstration notebooks and tools for using Arcee AI mo
 pip install -r requirements.txt
 ```
 
-## Radar Evaluator Tool
+## Radar Evaluator: Domain-Specific LLM Benchmarking Tool
 
-The `radar_evaluator.py` is a standalone tool for comparing language model performance across different industry domains. It features:
-
-- **Zero notebook dependencies** - Pure Python script
-- **Config-driven** - All model definitions and settings in `config.json`
-- **Timestamped results** - Each evaluation creates a dedicated timestamped folder
-- **Comprehensive output** - JSON, CSV, radar charts, and markdown reports
-- **Parallel processing** - Multi-threaded evaluation for faster results
+The `radar_evaluator.py` is a standalone tool for comparing language model performance across industry domains. It produces radar charts, CSV reports, and JSON results.
 
 ### Quick Start
 
@@ -34,25 +28,21 @@ The `radar_evaluator.py` is a standalone tool for comparing language model perfo
 # Compare AFM vs Llama3 on all industries
 python radar_evaluator.py --model1 afm --model2 llama3_8b
 
-# Compare specific models on specific industries with limited questions
+# Compare specific models on specific industries
 python radar_evaluator.py --model1 gemma --model2 qwen --industries "Information Technology" "Healthcare" --num-questions 5
 ```
 
 ### Configuration
 
-Edit `config.json` to:
-- Add new models
-- Modify evaluation parameters
-- Adjust output settings
-- Customize metrics
+Edit `config.json` to add models, modify evaluation parameters, and customize metrics.
 
-### Output Structure
+### Output
 
 Each evaluation creates a timestamped folder (`radar_results/YYYYMMDD_HHMMSS/`) containing:
-- `model_comparison_results.json` - Raw evaluation data
-- `radar_chart.png` - Visual comparison across industries
-- `summary_report.md` - Statistical summary
-- `detailed_results.csv` - Tabular data for analysis
+- `model_comparison_results.json` — Raw evaluation data
+- `radar_chart.png` — Visual radar chart comparison
+- `summary_report.md` — Statistical summary
+- `detailed_results.csv` — Tabular data for analysis
 
 ### Programmatic Usage
 
@@ -68,65 +58,38 @@ results = evaluator.run_evaluation(
 )
 ```
 
-## Industry Questions
+## Industry Domains
 
-The `industry_questions.json` file contains 20 deep domain knowledge questions for each of the 10 major S&P 500 industries:
-
-- Information Technology
-- Healthcare
-- Financials
-- Consumer Discretionary
-- Communication Services
-- Industrials
-- Consumer Staples
-- Energy
-- Utilities
-- Materials
+The `industry_questions.json` file contains 20 domain-specific questions for each of the 10 major S&P 500 industries: Information Technology, Healthcare, Financials, Consumer Discretionary, Communication Services, Industrials, Consumer Staples, Energy, Utilities, and Materials.
 
 ## Notebooks
 
-### 1. Caller Model Demo (`caller_demo.ipynb`)
+| Notebook | Description |
+|----------|-------------|
+| `caller_demo.ipynb` | Function calling and tool use with the [Arcee Caller model](https://api.together.ai/models/arcee-ai/caller) |
+| `virtuoso_demo.ipynb` | Text generation, streaming, and multi-turn chat with [Arcee Virtuoso Large](https://api.together.ai/models/arcee-ai/virtuoso-large) |
+| `afm_domains_demo.ipynb` | Domain-specific evaluation of the AFM model |
 
-This notebook demonstrates how to use the [Arcee AI Caller model](https://api.together.ai/models/arcee-ai/caller) for function calling and tool use.
+## Getting Started
 
-Features demonstrated:
-- Function calling with structured tools
-- Tool selection based on user queries
-- Passing tool results to a larger model for comprehensive responses
-- Error handling and fallbacks
-
-### 2. Virtuoso Large Model Demo (`virtuoso_demo.ipynb`)
-
-This notebook demonstrates how to use the [Arcee AI Virtuoso Large model](https://api.together.ai/models/arcee-ai/virtuoso-large) for various text generation tasks.
-
-Features demonstrated:
-- Basic text completion
-- Chat completion
-- Streaming responses
-- Advanced prompting with system instructions
-- Multi-turn conversation
-- Direct API calls
-
-### 3. AFM Domain Evaluation (`afm_domains_demo.ipynb`)
-
-Notebook for domain-specific model evaluation.
-
-## Usage
-
-1. Set your Together.ai API key as an environment variable:
+1. Set your API key:
    ```bash
    export TOGETHER_API_KEY='your_api_key_here'
    ```
 
-2. For the radar evaluator:
+2. Run the radar evaluator:
    ```bash
    python radar_evaluator.py --help
    ```
 
-3. For notebooks, open and run them in a Jupyter environment.
+3. Or open the notebooks in Jupyter.
+
+## Author
+
+Built by [Julien Simon](https://julien.org). More on benchmarking and evaluating LLMs on the [AI Realist](https://www.airealist.ai) Substack.
 
 ## Resources
 
 - [Together.ai Documentation](https://docs.together.ai/)
-- [Arcee AI Models](https://api.together.ai/models?q=arcee-ai)
-- [Arcee AI Documentation](https://arcee.ai/docs) 
+- [Arcee AI Models on Together.ai](https://api.together.ai/models?q=arcee-ai)
+- [Arcee AI](https://arcee.ai)

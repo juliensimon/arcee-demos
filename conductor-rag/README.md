@@ -9,100 +9,65 @@ app_file: app.py
 pinned: false
 ---
 
-# Conductor RAG - Document Question-Answering System
+# RAG Document Q&A with Arcee Conductor, LangChain, and ChromaDB
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Gradio](https://img.shields.io/badge/Gradio-5.23.1-orange)](https://gradio.app/)
 [![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Spaces-yellow)](https://huggingface.co/spaces)
 [![Arcee Conductor](https://img.shields.io/badge/Arcee-Conductor-purple)](https://conductor.arcee.ai)
 
-🚀 A Retrieval-Augmented Generation (RAG) powered chat interface for document Q&A using Arcee Conductor
-
-## Overview
-This application provides an interactive chat interface that allows users to ask questions about their documents. It combines the power of Large Language Models with document retrieval to provide accurate, source-backed answers.
+A Retrieval-Augmented Generation (RAG) chat interface for document question-answering, built with [Arcee Conductor](https://conductor.arcee.ai), LangChain, ChromaDB, and Gradio. Upload PDFs and ask questions with source-backed, cited answers.
 
 ## Features
-- **RAG-Powered Responses**: Leverages document context to provide accurate, factual answers
-- **Flexible Query Modes**: Switch between RAG and vanilla LLM responses
-- **Source Citations**: Automatically includes relevant document sources and page numbers
-- **Interactive Interface**: Clean, user-friendly Gradio-based chat interface
-- **Context Visibility**: View the retrieved document chunks used to generate responses
 
-## Technical Details
-- Built with Langchain and Gradio
-- Uses Arcee Conductor API for LLM capabilities
-- Document embedding via BAAI/bge-small-en-v1.5
-- ChromaDB for vector storage
-- Supports PDF document processing
+- **RAG-powered responses** — Answers grounded in your documents, not hallucinated
+- **Source citations** — Every answer includes document sources and page numbers
+- **Flexible query modes** — Switch between RAG and vanilla LLM responses
+- **Context visibility** — View the retrieved document chunks used for each answer
+- **Interactive chat** — Clean Gradio-based conversational interface
+
+## Tech Stack
+
+- [Arcee Conductor API](https://conductor.arcee.ai) for LLM capabilities
+- [LangChain](https://python.langchain.com/) for RAG orchestration
+- [ChromaDB](https://www.trychroma.com/) for vector storage
+- [BAAI/bge-small-en-v1.5](https://huggingface.co/BAAI/bge-small-en-v1.5) for document embeddings
+- [Gradio](https://gradio.app/) for the web interface
 
 ## Included Papers
-The following research papers are included in the `pdf` directory:
 
-- [arXiv:2306.13649v3](https://arxiv.org/abs/2306.13649)
-- [arXiv:2309.16609v1](https://arxiv.org/abs/2309.16609)
-- [arXiv:2312.06795v1](https://arxiv.org/abs/2312.06795)
-- [arXiv:2403.19522v1](https://arxiv.org/abs/2403.19522)
-- [arXiv:2405.04434v5](https://arxiv.org/abs/2405.04434)
-- [arXiv:2406.11617v1](https://arxiv.org/abs/2406.11617)
-- [arXiv:2410.21228v1](https://arxiv.org/abs/2410.21228)
-- [arXiv:2411.05059v2](https://arxiv.org/abs/2411.05059)
-- [arXiv:2501.09223v1](https://arxiv.org/abs/2501.09223)
-- [arXiv:2501.12948v1](https://arxiv.org/abs/2501.12948)
-- [arXiv:2503.04872v1](https://arxiv.org/abs/2503.04872)
+The `pdf` directory contains research papers for testing:
 
-## Deployment
-This application is hosted as a Hugging Face Space. Configuration details can be found in the [spaces config reference](https://huggingface.co/docs/hub/spaces-config-reference).
+- [arXiv:2306.13649v3](https://arxiv.org/abs/2306.13649), [arXiv:2309.16609v1](https://arxiv.org/abs/2309.16609), [arXiv:2312.06795v1](https://arxiv.org/abs/2312.06795), [arXiv:2403.19522v1](https://arxiv.org/abs/2403.19522), [arXiv:2405.04434v5](https://arxiv.org/abs/2405.04434), [arXiv:2406.11617v1](https://arxiv.org/abs/2406.11617), [arXiv:2410.21228v1](https://arxiv.org/abs/2410.21228), [arXiv:2411.05059v2](https://arxiv.org/abs/2411.05059), [arXiv:2501.09223v1](https://arxiv.org/abs/2501.09223), [arXiv:2501.12948v1](https://arxiv.org/abs/2501.12948), [arXiv:2503.04872v1](https://arxiv.org/abs/2503.04872)
 
-## Creating Your Own Hugging Face Space Using CLI
+## Deploy as a Hugging Face Space
 
-You can easily deploy this application as your own Hugging Face Space using the Hugging Face CLI. Follow these steps:
-
-1. **Install the Hugging Face CLI**:
+1. Install the Hugging Face CLI:
    ```bash
    pip install huggingface_hub
-   ```
-
-2. **Login to Hugging Face**:
-   ```bash
    huggingface-cli login
    ```
-   You'll be prompted to enter your Hugging Face token, which you can find in your account settings.
 
-3. **Clone this Repository**:
+2. Create a new Space:
    ```bash
-   git clone https://github.com/username/conductor-rag.git
-   cd conductor-rag
+   huggingface-cli repo create conductor-rag --type space --space-sdk gradio
    ```
 
-4. **Create a New Space**:
-   ```bash
-   huggingface-cli repo create conductor-rag-your-name --type space --space-sdk gradio
-   ```
+3. Add `OPENAI_API_KEY` (your Arcee Conductor API key) as a repository secret.
 
-5. **Add Your Environment Variables**:
-   The application uses the following environment variables, which you need to set in the Space settings:
-   - `OPENAI_API_KEY`: Your Arcee Conductor API key
-
-7. **Push Your Code to the Space**:
+4. Push your code:
    ```bash
    git remote add space https://huggingface.co/spaces/your-username/conductor-rag
    git push space main
    ```
 
-8. **Add Your PDF Documents**:
-   You can either add PDFs directly to the repository before pushing, or upload them later through git.
+## Author
 
-9. **Monitor Deployment**:
-   Visit `https://huggingface.co/spaces/your-username/conductor-rag-your-name` to see your Space being built and deployed.
-
-Your Space will automatically build and deploy the application. Once complete, you can access it via the provided URL and share it with others.
+Built by [Julien Simon](https://julien.org). More on building RAG applications on the [AI Realist](https://www.airealist.ai) Substack.
 
 ## Resources
 
-- [Hugging Face Spaces Documentation](https://huggingface.co/docs/hub/spaces-overview)
+- [Arcee Conductor](https://conductor.arcee.ai)
+- [LangChain Documentation](https://python.langchain.com/)
 - [Gradio Documentation](https://gradio.app/docs/)
-- [Arcee Conductor Documentation](https://conductor.arcee.ai/docs)
-- [LangChain Documentation](https://python.langchain.com/docs/get_started/introduction)
-
----
-Built with 💖 using Arcee Conductor
+- [Hugging Face Spaces](https://huggingface.co/docs/hub/spaces-overview)

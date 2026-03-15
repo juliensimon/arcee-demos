@@ -1,33 +1,21 @@
-# Arcee Agent Demos
+# Arcee AI Agent: Tool Use and Function Calling Demos
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebook-orange.svg)](https://jupyter.org/)
 [![Arcee Agent](https://img.shields.io/badge/Arcee-Agent-purple)](https://arcee.ai)
 
-Jupyter notebooks demonstrating Arcee agent capabilities.
-
-## Overview
-
-This directory contains Jupyter notebooks that showcase Arcee's agent capabilities. These notebooks demonstrate how Arcee agents can be used for various tasks, such as financial data analysis, information retrieval, and more.
+Jupyter notebooks demonstrating AI agent capabilities with [Arcee AI](https://arcee.ai) models, including function calling, tool use, and real-time data retrieval.
 
 ## Notebooks
 
-- `yahoo_finance_assistant.ipynb`: Demonstrates an Arcee agent that can retrieve and analyze financial data from Yahoo Finance.
-
-## Requirements
-
-To run these notebooks, you'll need:
-
-1. Python 3.8+
-2. Jupyter Notebook or JupyterLab
-3. Arcee API credentials
+- `yahoo_finance_assistant.ipynb` — An AI agent that retrieves and analyzes financial data from Yahoo Finance using Arcee's function calling capabilities
 
 ## Getting Started
 
 1. Set up your Python environment:
    ```bash
    python -m venv env
-   source env/bin/activate  # On Windows: env\Scripts\activate
+   source env/bin/activate
    pip install jupyter pandas numpy matplotlib
    ```
 
@@ -38,9 +26,11 @@ To run these notebooks, you'll need:
    jupyter notebook
    ```
 
-4. Open and run the notebooks.
+## Author
+
+Built by [Julien Simon](https://julien.org). More AI tutorials on the [AI Realist](https://www.airealist.ai) Substack.
 
 ## Resources
 
-- [Arcee AI Documentation](https://arcee.ai/docs)
-- [Arcee Agent API Reference](https://arcee.ai/docs/agent) 
+- [Arcee AI](https://arcee.ai)
+- [Arcee Conductor API](https://conductor.arcee.ai)

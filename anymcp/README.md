@@ -1,27 +1,15 @@
-# Arcee MCP Examples
+# Arcee AnyMCP: Multi-Cloud AI Model Deployment Examples
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Arcee AnyMCP](https://img.shields.io/badge/Arcee-AnyMCP-orange)](https://arcee.ai)
 
-Minimal test scripts for Arcee's Multi-Cloud Platform (MCP).
-
-## Overview
-
-This directory contains minimal examples and test scripts for working with Arcee AnyMCP, which allows for seamless deployment and management of AI models across different cloud providers.
+Minimal test scripts for [Arcee AnyMCP](https://arcee.ai), a multi-cloud platform for deploying and managing AI models across different cloud providers.
 
 ## Files
 
-- `minimal_test.py`: A minimal test script for basic MCP functionality
-- `script.py`: Example script for MCP operations
-- `claude_desktop_config.json`: Configuration file for Claude desktop integration
-
-## Requirements
-
-Dependencies are listed in `requirements.txt`. Install them with:
-
-```bash
-pip install -r requirements.txt
-```
+- `minimal_test.py` — Minimal test script for basic MCP functionality
+- `script.py` — Example script for MCP operations
+- `claude_desktop_config.json` — Configuration file for Claude desktop integration
 
 ## Getting Started
 
@@ -38,3 +26,7 @@ pip install -r requirements.txt
    ```bash
    python minimal_test.py
    ```
+
+## Author
+
+Built by [Julien Simon](https://julien.org). More AI tutorials on the [AI Realist](https://www.airealist.ai) Substack.

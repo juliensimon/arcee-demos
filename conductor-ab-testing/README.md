@@ -1,163 +1,87 @@
-
-# A-B Testing with Similarity Metrics
+# LLM A/B Testing Tool: Compare AI Model Responses with Similarity Metrics
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Gradio](https://img.shields.io/badge/Gradio-5.23.3-orange)](https://gradio.app/)
 [![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Spaces-yellow)](https://huggingface.co/spaces)
 
-A powerful tool for comparing responses from different AI models through Arcee and Together AI APIs. This application allows you to perform side-by-side comparisons, collect feedback, and analyze similarity metrics between model outputs.
+A side-by-side comparison tool for evaluating AI model responses through [Arcee Conductor](https://conductor.arcee.ai) and [Together.ai](https://together.ai) APIs. Compare outputs, measure semantic similarity, collect human feedback, and make data-driven model selection decisions.
 
 ## Features
 
-- **Side-by-Side Model Comparison**: Compare responses from any two models available through the Arcee API or Together.ai
-- **Configurable Generation Parameters**: Control temperature, top_p, max_tokens, frequency_penalty, and presence_penalty for both models
-- **Detailed Metrics**: View token usage, response time, and multiple similarity metrics
-- **Semantic Analysis**: Analyze the semantic similarity between model responses
-- **Feedback Collection**: Save your preferences between model responses
-- **Data Management**: View, copy, and reset collected feedback data
-- **Random Prompts**: Load random test prompts to quickly evaluate models
+- **Side-by-Side Comparison** — Compare responses from any two models available through Arcee or Together.ai
+- **Configurable Generation** — Control temperature, top_p, max_tokens, frequency_penalty, and presence_penalty
+- **Semantic Similarity Metrics** — Quantitative analysis of response similarity using sentence transformers
+- **Human Feedback Collection** — Save preferences for systematic model evaluation
+- **Random Test Prompts** — Quickly evaluate models with pre-built prompts
 
 ## Available Models
 
-### Arcee API Models
-The application automatically discovers and lists all available models from the Arcee API, including:
-- virtuoso-large
-- virtuoso-medium
-- coder
-- spotlight
-- caller-large
-- blitz
-- And many more...
+### Arcee API
+Auto-discovered from the Arcee API: virtuoso-large, virtuoso-medium, coder, spotlight, caller-large, blitz, and more.
 
-### Together.ai Models
-- **arcee-ai/AFM-4.5B**: A 4.5B parameter model optimized for various tasks
-
-To use Together.ai models, you need to set the `TOGETHER_API_KEY` environment variable.
-
-## Generation Parameters
-
-The application allows you to configure the following generation parameters for both models:
-
-- **Temperature** (0.0 - 2.0): Controls randomness in the response. Lower values make responses more deterministic, higher values increase creativity.
-- **Top P** (0.0 - 1.0): Controls diversity via nucleus sampling. Lower values focus on more likely tokens.
-- **Max Tokens** (1 - 4000): Maximum number of tokens to generate in the response.
-- **Frequency Penalty** (-2.0 - 2.0): Reduces repetition of frequent tokens. Positive values discourage repetition.
-- **Presence Penalty** (-2.0 - 2.0): Reduces repetition of any token. Positive values encourage the model to talk about new topics.
-
-Both models use exactly the same parameters to ensure fair comparison. Default values are:
-- Temperature: 0.7
-- Top P: 0.9
-- Max Tokens: 1000
-- Frequency Penalty: 0.0
-- Presence Penalty: 0.0
+### Together.ai
+- **arcee-ai/AFM-4.5B** — Optimized 4.5B parameter model (requires `TOGETHER_API_KEY`)
 
 ## Getting Started
 
-### Prerequisites
-
-- Arcee API key - see https://conductor.arcee.ai
-- Together.ai API key (optional, for AFM-4.5B model) - see https://together.ai
-- Python 3.10+
-- Required packages: gradio, openai, together, sentence-transformers
-
-### Installation
-
-1. Clone this repository:
-   ```bash
-   git clone https://gitlab.com/juliensimon/arcee-demos.git
-   cd conductor-ab-testing
-   ```
-
-2. Install the required packages:
+1. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. Create a `.env` file in the project root and add your API keys:
+2. Create a `.env` file with your API keys:
    ```
    CONDUCTOR_API_KEY=your_conductor_api_key_here
    TOGETHER_API_KEY=your_together_api_key_here
    ```
 
-4. Run the application:
+3. Run the application:
    ```bash
    python app.py
    ```
 
-## Usage
+## Generation Parameters
 
-1. Select two models from the dropdown menus
-2. Enter your query or use the "Random Prompt" button
-3. Click "Submit" to get responses from both models
-4. View the responses and metrics
-5. Provide feedback by clicking "Prefer this response" for your preferred model
-6. View collected feedback data using the "Display Feedback Data" button
+Both models use identical parameters for fair comparison:
 
-## Creating Your Own Space
+| Parameter | Range | Default | Effect |
+|-----------|-------|---------|--------|
+| Temperature | 0.0–2.0 | 0.7 | Controls randomness |
+| Top P | 0.0–1.0 | 0.9 | Nucleus sampling diversity |
+| Max Tokens | 1–4000 | 1000 | Maximum response length |
+| Frequency Penalty | -2.0–2.0 | 0.0 | Reduces token repetition |
+| Presence Penalty | -2.0–2.0 | 0.0 | Encourages topic diversity |
 
-You can easily deploy this application as a Hugging Face Space by following these steps:
+## Deploy as a Hugging Face Space
 
-1. Fork this repository to your GitHub account
-
-2. Create a new Space on Hugging Face:
-   - Go to [Hugging Face Spaces](https://huggingface.co/spaces)
-   - Click "Create new Space"
-   - Choose "Gradio" as the SDK
-   - Connect your GitHub repository
-
-3. Configure your Space:
-   - Update the Space configuration in the README.md file:
-     ```
-     ---
-     title: Arcee AI A-B Testing
-     emoji: 🏆
-     colorFrom: green
-     colorTo: blue
-     sdk: gradio
-     sdk_version: 5.23.3
-     app_file: app.py
-     pinned: false
-     ---
-     ```
-
-4. Add your API keys as secrets:
-   - Go to your Space settings
-   - Navigate to the "Repository secrets" section
-   - Add a new secret with the name `CONDUCTOR_API_KEY` and your Conductor API key as the value
-   - Add another secret with the name `TOGETHER_API_KEY` and your Together.ai API key as the value (optional)
-
-5. Deploy your Space:
-   - Commit and push your changes to GitHub
-   - Hugging Face will automatically deploy your Space
-
-6. Customize your Space:
-   - Add a custom thumbnail image
-   - Update the description
-   - Add tags to make your Space discoverable
-
-Your Space will be available at `https://huggingface.co/spaces/yourusername/your-space-name`
+1. Fork this repository
+2. Create a new [Hugging Face Space](https://huggingface.co/spaces) with Gradio SDK
+3. Add `CONDUCTOR_API_KEY` and `TOGETHER_API_KEY` as repository secrets
+4. Push and deploy
 
 ## Adding Test Prompts
 
-Create a file named `test_prompts.json` in the project root with an array of prompts:
+Create `test_prompts.json` in the project root:
 
 ```json
 [
   "Explain quantum computing in simple terms",
   "Write a short poem about artificial intelligence",
-  "What are the ethical implications of large language models?",
-  "Describe the process of photosynthesis"
+  "What are the ethical implications of large language models?"
 ]
 ```
 
+## Author
+
+Built by [Julien Simon](https://julien.org). More on evaluating and comparing LLMs on the [AI Realist](https://www.airealist.ai) Substack.
+
 ## Resources
 
+- [Arcee Conductor](https://conductor.arcee.ai)
 - [Gradio Documentation](https://gradio.app/docs/)
-- [Hugging Face Spaces Documentation](https://huggingface.co/docs/hub/spaces-overview)
-- [Sentence Transformers Documentation](https://www.sbert.net/)
+- [Hugging Face Spaces](https://huggingface.co/docs/hub/spaces-overview)
+- [Sentence Transformers](https://www.sbert.net/)
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+MIT License — see the LICENSE file for details.
