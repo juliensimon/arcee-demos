@@ -1,0 +1,27 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "mlx/mlx-community/Trinity-Mini-8bit",
+  "provider": {
+    "mlx": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "MLX Local",
+      "options": {
+        "baseURL": "http://localhost:8080/v1"
+      },
+      "models": {
+        "mlx-community/Trinity-Mini-8bit": {
+          "name": "Trinity Mini (MLX 8-bit)"
+        },
+        "mlx-community/Trinity-Mini-6bit": {
+          "name": "Trinity Mini (MLX 6-bit)"
+        },
+        "mlx-community/Trinity-Mini-5bit": {
+          "name": "Trinity Mini (MLX 5-bit)"
+        },
+        "mlx-community/Trinity-Mini-4bit": {
+          "name": "Trinity Mini (MLX 4-bit)"
+        }
+      }
+    }
+  }
+}
