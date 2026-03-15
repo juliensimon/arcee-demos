@@ -283,6 +283,28 @@ Trinity-Mini punches above its weight on tool use and structured output (see [be
 
 ---
 
+## Benchmark: Generation Speed by Quantization
+
+Measured on a MacBook Pro M4 Max (48 GB), 10 iterations of 200 tokens each, with a warm-up run to trigger Metal kernel compilation:
+
+| Quantization | Avg (tok/s) | Min | Max | Stddev |
+|-------------|-------------|-----|-----|--------|
+| **4-bit** | 75.3 | 74.2 | 75.7 | 0.4 |
+| **5-bit** | 67.9 | 65.9 | 68.7 | 0.7 |
+| **6-bit** | 61.0 | 59.2 | 61.5 | 0.6 |
+| **8-bit** | 57.4 | 56.3 | 57.9 | 0.5 |
+
+4-bit is ~31% faster than 8-bit. All quantizations comfortably exceed typical reading speed (~4 tok/s) and are fast enough for interactive coding use. The low standard deviations (< 1 tok/s) show stable throughput after warmup.
+
+To run the benchmark yourself:
+
+```bash
+./benchmark.sh              # defaults: 8bit, 200 tokens, 10 iterations
+./benchmark.sh --all        # benchmark all quantizations
+```
+
+---
+
 ## Going Further
 
 ### Use Trinity-Mini with Other Tools
